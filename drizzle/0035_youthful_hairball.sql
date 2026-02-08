@@ -1,1 +1,0 @@
-ALTER TABLE `bank_transfer_requests` ADD `planType` enum('monthly','yearly') DEFAULT 'monthly' NOT NULL;

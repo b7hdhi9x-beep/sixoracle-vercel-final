@@ -1,9 +1,0 @@
-{
-  "query": "CREATE TABLE IF NOT EXISTS payment_links (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  linkId VARCHAR(64) NOT NULL UNIQUE,\n  userId INT NOT NULL,\n  provider ENUM('telecom_credit', 'alpha_note', 'bank_transfer', 'other') NOT NULL,\n  amount INT NOT NULL DEFAULT 1980,\n  status ENUM('pending', 'completed', 'expired', 'cancelled') NOT NULL DEFAULT 'pending',\n  paymentUrl TEXT,\n  metadata TEXT,\n  expiresAt TIMESTAMP NULL,\n  completedAt TIMESTAMP NULL,\n  externalPaymentId VARCHAR(255),\n  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,\n  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL\n);",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user XDDKssvc1D2yUWV.0654eaeb7844 --database kufGYAjS8ccnWNwUa3NpZF --execute CREATE TABLE IF NOT EXISTS payment_links (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  linkId VARCHAR(64) NOT NULL UNIQUE,\n  userId INT NOT NULL,\n  provider ENUM('telecom_credit', 'alpha_note', 'bank_transfer', 'other') NOT NULL,\n  amount INT NOT NULL DEFAULT 1980,\n  status ENUM('pending', 'completed', 'expired', 'cancelled') NOT NULL DEFAULT 'pending',\n  paymentUrl TEXT,\n  metadata TEXT,\n  expiresAt TIMESTAMP NULL,\n  completedAt TIMESTAMP NULL,\n  externalPaymentId VARCHAR(255),\n  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,\n  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL\n);",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 1946
-}

@@ -1,1 +1,0 @@
-ALTER TABLE `users` ADD `selectedOracleId` varchar(50);

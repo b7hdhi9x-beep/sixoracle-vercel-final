@@ -1,1 +1,0 @@
-ALTER TABLE `notifications` MODIFY COLUMN `type` enum('new_oracle','weekly_fortune','payment','system','campaign','referral','withdrawal') NOT NULL;

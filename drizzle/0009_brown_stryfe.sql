@@ -1,1 +1,0 @@
-ALTER TABLE `feedback_box` MODIFY COLUMN `userId` int;

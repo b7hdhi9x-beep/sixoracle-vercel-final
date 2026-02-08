@@ -1,1 +1,0 @@
-ALTER TABLE `users` ADD `hasUsedFirstRecoveryDiscount` boolean DEFAULT false NOT NULL;

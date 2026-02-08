@@ -1,1 +1,0 @@
-ALTER TABLE `withdrawal_requests` ADD `scheduledTransferDate` date;

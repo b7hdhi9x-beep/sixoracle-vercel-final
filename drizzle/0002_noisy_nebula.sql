@@ -1,1 +1,0 @@
-ALTER TABLE `users` MODIFY COLUMN `dailyReadingLimit` int NOT NULL DEFAULT 10;

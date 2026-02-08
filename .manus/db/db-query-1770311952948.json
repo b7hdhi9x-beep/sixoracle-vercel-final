@@ -1,9 +1,0 @@
-{
-  "query": "CREATE TABLE IF NOT EXISTS account_merge_history (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  primaryAccountId INT NOT NULL,\n  mergedAccountId INT NOT NULL,\n  mergedByAdminId INT NOT NULL,\n  mergeReason TEXT NOT NULL,\n  mergedAccountSnapshot TEXT NOT NULL,\n  transferredData TEXT NOT NULL,\n  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL\n);",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user XDDKssvc1D2yUWV.0654eaeb7844 --database kufGYAjS8ccnWNwUa3NpZF --execute CREATE TABLE IF NOT EXISTS account_merge_history (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  primaryAccountId INT NOT NULL,\n  mergedAccountId INT NOT NULL,\n  mergedByAdminId INT NOT NULL,\n  mergeReason TEXT NOT NULL,\n  mergedAccountSnapshot TEXT NOT NULL,\n  transferredData TEXT NOT NULL,\n  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL\n);",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 2031
-}

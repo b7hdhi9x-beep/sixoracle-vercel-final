@@ -1,1 +1,0 @@
-ALTER TABLE `activation_codes` ADD `planType` enum('monthly','yearly') DEFAULT 'monthly' NOT NULL;

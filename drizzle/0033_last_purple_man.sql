@@ -1,1 +1,0 @@
-ALTER TABLE `bank_transfer_requests` MODIFY COLUMN `status` enum('pending','confirmed','cancelled','rejected') NOT NULL DEFAULT 'pending';

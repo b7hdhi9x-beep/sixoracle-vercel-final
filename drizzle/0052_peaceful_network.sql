@@ -1,1 +1,0 @@
-ALTER TABLE `monthly_activation_codes` MODIFY COLUMN `createdByAdminId` int;

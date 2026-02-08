@@ -1,1 +1,0 @@
-ALTER TABLE `purchase_history` MODIFY COLUMN `type` enum('reading_recovery','additional_oracle','premium_subscription','premium_upgrade','daily_recovery') NOT NULL;

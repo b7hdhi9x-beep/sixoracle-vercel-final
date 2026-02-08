@@ -1,1 +1,0 @@
-ALTER TABLE `payout_requests` MODIFY COLUMN `accountType` enum('ordinary','checking','savings') NOT NULL DEFAULT 'ordinary';
