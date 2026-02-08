@@ -200,8 +200,12 @@ export default function DashboardContent() {
                         }`}
                         title={oracle.name}
                       >
-                        <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${oracle.color} flex items-center justify-center`}>
-                          {Icon && <Icon className="w-4 h-4 text-white" />}
+                        <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${oracle.color} flex items-center justify-center overflow-hidden`}>
+                          {oracle.avatar ? (
+                            <img src={oracle.avatar} alt={oracle.name} className="w-full h-full object-cover" />
+                          ) : (
+                            Icon && <Icon className="w-4 h-4 text-white" />
+                          )}
                         </div>
                         <span className="text-[10px] text-gray-400 truncate w-full text-center">
                           {oracle.name}
@@ -288,8 +292,12 @@ export default function DashboardContent() {
           <button onClick={() => setSidebarOpen(true)} className="text-gray-400 hover:text-white transition-colors">
             <Menu className="w-6 h-6" />
           </button>
-          <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${selectedOracle.color} flex items-center justify-center shadow-lg`}>
-            {OracleIcon && <OracleIcon className="w-5 h-5 text-white" />}
+          <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${selectedOracle.color} flex items-center justify-center shadow-lg overflow-hidden`}>
+            {selectedOracle.avatar ? (
+              <img src={selectedOracle.avatar} alt={selectedOracle.name} className="w-full h-full object-cover" />
+            ) : (
+              OracleIcon && <OracleIcon className="w-5 h-5 text-white" />
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-lg font-serif text-gold truncate">{selectedOracle.name}</h1>
@@ -305,8 +313,12 @@ export default function DashboardContent() {
         <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center">
-              <div className={`w-20 h-20 rounded-full bg-gradient-to-br ${selectedOracle.color} flex items-center justify-center mb-4 shadow-xl`}>
-                {OracleIcon && <OracleIcon className="w-10 h-10 text-white" />}
+              <div className={`w-20 h-20 rounded-full bg-gradient-to-br ${selectedOracle.color} flex items-center justify-center mb-4 shadow-xl overflow-hidden`}>
+                {selectedOracle.avatar ? (
+                  <img src={selectedOracle.avatar} alt={selectedOracle.name} className="w-full h-full object-cover" />
+                ) : (
+                  OracleIcon && <OracleIcon className="w-10 h-10 text-white" />
+                )}
               </div>
               <h2 className="text-xl font-serif text-gold mb-2">{selectedOracle.name}</h2>
               <p className="text-sm text-gray-400 max-w-md mb-6">{selectedOracle.description}</p>

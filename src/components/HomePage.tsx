@@ -124,9 +124,13 @@ export default function HomePage() {
                 >
                   <div className="oracle-card h-full p-6 flex flex-col items-center text-center">
                     <div
-                      className={`w-16 h-16 rounded-full bg-gradient-to-br ${oracle.color} flex items-center justify-center mb-4 shadow-lg`}
+                      className={`w-16 h-16 rounded-full bg-gradient-to-br ${oracle.color} flex items-center justify-center mb-4 shadow-lg overflow-hidden`}
                     >
-                      {Icon && <Icon className="w-8 h-8 text-white" />}
+                      {oracle.avatar ? (
+                        <img src={oracle.avatar} alt={oracle.name} className="w-full h-full object-cover" />
+                      ) : (
+                        Icon && <Icon className="w-8 h-8 text-white" />
+                      )}
                     </div>
                     <h3 className="text-2xl font-serif text-gold mb-1">{oracle.name}</h3>
                     <p className="text-xs uppercase tracking-widest text-gray-500 mb-3">

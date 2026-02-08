@@ -6,6 +6,7 @@ export interface Oracle {
   description: string;
   specialty: string;
   icon: string;
+  avatar: string;
   color: string;
   gradientFrom: string;
   gradientTo: string;
@@ -23,6 +24,7 @@ export const oracles: Oracle[] = [
     description: "時の流れを読み、あなたの人生における最適なタイミングを見極める占い師。運命の転機や重要な決断の時期を的確に導きます。",
     specialty: "運命、タイミング、転機、決断",
     icon: "Clock",
+    avatar: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663228451672/nAgvTXIHKXWUTpUi.jpg",
     color: "from-blue-600 to-indigo-800",
     gradientFrom: "#2563eb",
     gradientTo: "#3730a3",
@@ -45,6 +47,7 @@ export const oracles: Oracle[] = [
     description: "心の傷を癒し、恋愛の悩みに寄り添う優しき占い師。感情の機微を読み取り、あなたの心に安らぎをもたらします。",
     specialty: "癒し、恋愛、感情、人間関係",
     icon: "Heart",
+    avatar: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663228451672/cPJkcIlCXRECUeYr.jpg",
     color: "from-pink-500 to-rose-600",
     gradientFrom: "#ec4899",
     gradientTo: "#e11d48",
@@ -67,6 +70,7 @@ export const oracles: Oracle[] = [
     description: "数秘術の奥義を極めた知性派占い師。あなたの本質的な性格や、他者との相性を数の力で解き明かします。",
     specialty: "数秘術、性格分析、相性診断",
     icon: "Calculator",
+    avatar: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663228451672/OVpbxsGmppCAaBJU.jpg",
     color: "from-purple-600 to-violet-800",
     gradientFrom: "#9333ea",
     gradientTo: "#5b21b6",
@@ -89,6 +93,7 @@ export const oracles: Oracle[] = [
     description: "タロットカードを通じて未来の可能性を照らす占い師。人生の分岐点において、最良の選択へと導く光となります。",
     specialty: "タロット、未来予測、選択、分岐点",
     icon: "Lightbulb",
+    avatar: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663228451672/xOcqodokCNQJDGUc.jpg",
     color: "from-amber-400 to-orange-500",
     gradientFrom: "#fbbf24",
     gradientTo: "#f97316",
@@ -111,6 +116,7 @@ export const oracles: Oracle[] = [
     description: "夢の世界と無意識の領域を探求する神秘的な占い師。あなたの深層心理に眠る真実を、直感の力で引き出します。",
     specialty: "夢占い、深層心理、直感、無意識",
     icon: "Moon",
+    avatar: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663228451672/XWwaydKfhciopdEW.jpg",
     color: "from-cyan-400 to-teal-600",
     gradientFrom: "#22d3ee",
     gradientTo: "#0d9488",
@@ -133,6 +139,7 @@ export const oracles: Oracle[] = [
     description: "現実的で実践的なアドバイスを提供する守護者。あなたを守り、具体的な行動指針を示して、確実な一歩を踏み出させます。",
     specialty: "守護、行動指針、現実的助言、実践",
     icon: "Shield",
+    avatar: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663228451672/RiNhmchwJiPvvsuE.jpg",
     color: "from-emerald-600 to-green-700",
     gradientFrom: "#059669",
     gradientTo: "#15803d",
@@ -155,6 +162,7 @@ export const oracles: Oracle[] = [
     description: "手のひらに刻まれた運命の線を読み解く占い師。生命線、感情線、運命線から、あなたの過去・現在・未来を紐解きます。",
     specialty: "手相、運命線、生命線、感情線",
     icon: "Hand",
+    avatar: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663228451672/WpWEvDVPgtWgvtEZ.jpg",
     color: "from-purple-500 to-violet-700",
     gradientFrom: "#a855f7",
     gradientTo: "#6d28d9",
@@ -177,6 +185,7 @@ export const oracles: Oracle[] = [
     description: "星々の配置から運命を読み解く占い師。12星座と惑星の動きから、あなたの運勢と未来を導きます。",
     specialty: "星座占い、西洋占星術、惑星、運勢",
     icon: "Star",
+    avatar: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663228451672/pGByFBIoaMFNKOMl.jpg",
     color: "from-indigo-400 to-blue-600",
     gradientFrom: "#818cf8",
     gradientTo: "#2563eb",
@@ -200,6 +209,7 @@ export const oracles: Oracle[] = [
     description: "血液型占いの奥義を極めた妖艶な占い師。A・B・O・ABの4つの血の力から、あなたの本質と運命の相性を読み解きます。",
     specialty: "血液型占い、性格診断、相性占い、恋愛傾向",
     icon: "Droplet",
+    avatar: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663228451672/AUBeMdjNWZLcBfuu.jpg",
     color: "from-red-600 to-rose-800",
     gradientFrom: "#dc2626",
     gradientTo: "#9f1239",
@@ -223,6 +233,7 @@ export const oracles: Oracle[] = [
     description: "動物の魂と交信する野性的な占い師。あなたの内なる動物を見出し、本能に従った生き方と行動パターンを導きます。",
     specialty: "動物占い、本能分析、行動パターン、適職診断",
     icon: "Cat",
+    avatar: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663228451672/tZqniYogaNOxeuiw.jpg",
     color: "from-amber-600 to-orange-700",
     gradientFrom: "#d97706",
     gradientTo: "#c2410c",
@@ -246,6 +257,7 @@ export const oracles: Oracle[] = [
     description: "MBTI性格診断の専門家。あなたの16タイプの性格を見極め、相性・適職・人間関係のアドバイスを提供します。",
     specialty: "MBTI診断、性格分析、相性診断、適職診断",
     icon: "Brain",
+    avatar: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663228451672/iOTeWLzODfkbyvoX.jpg",
     color: "from-cyan-500 to-blue-700",
     gradientFrom: "#06b6d4",
     gradientTo: "#1d4ed8",
