@@ -8,6 +8,8 @@ interface User {
   isAdmin: boolean;
   nickname?: string;
   createdAt: number;
+  premiumExpiry?: number; // Unix timestamp when premium expires
+  premiumGrantedBy?: string; // "stripe" | "admin" | undefined
 }
 
 interface AuthContextType {
@@ -17,6 +19,10 @@ interface AuthContextType {
   login: (phone: string, code: string) => boolean;
   logout: () => void;
   upgradeToPremium: () => void;
+  grantPremium: (phone: string, durationDays: number) => void;
+  revokePremium: (phone: string) => void;
+  getAllUsers: () => User[];
+  isPremiumActive: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -26,14 +32,43 @@ const AuthContext = createContext<AuthContextType>({
   login: () => false,
   logout: () => {},
   upgradeToPremium: () => {},
+  grantPremium: () => {},
+  revokePremium: () => {},
+  getAllUsers: () => [],
+  isPremiumActive: false,
 });
 
 const DEMO_CODE = "1234";
 const ADMIN_CODE = "9999";
 const STORAGE_KEY = "sixoracle_user";
+const ALL_USERS_KEY = "sixoracle_all_users";
 
 // Admin phone numbers (can be extended)
 const ADMIN_PHONES = ["090-0000-0000", "admin"];
+
+// Helper: check if premium is still active
+function checkPremiumActive(user: User | null): boolean {
+  if (!user) return false;
+  if (user.isAdmin) return true; // Admins always have access
+  if (!user.isPremium) return false;
+  if (user.premiumExpiry && Date.now() > user.premiumExpiry) return false; // Expired
+  return true;
+}
+
+// Helper: save user to all_users registry
+function saveToRegistry(user: User) {
+  try {
+    const stored = localStorage.getItem(ALL_USERS_KEY);
+    const users: User[] = stored ? JSON.parse(stored) : [];
+    const idx = users.findIndex(u => u.phone === user.phone);
+    if (idx >= 0) {
+      users[idx] = user;
+    } else {
+      users.push(user);
+    }
+    localStorage.setItem(ALL_USERS_KEY, JSON.stringify(users));
+  } catch {}
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -48,6 +83,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (parsed.isAdmin === undefined) {
           parsed.isAdmin = ADMIN_PHONES.includes(parsed.phone);
         }
+        // Check if premium has expired
+        if (parsed.isPremium && parsed.premiumExpiry && Date.now() > parsed.premiumExpiry) {
+          parsed.isPremium = false;
+          parsed.premiumExpiry = undefined;
+          parsed.premiumGrantedBy = undefined;
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+          saveToRegistry(parsed);
+        }
         setUser(parsed);
       }
     } catch {}
@@ -57,6 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const saveUser = useCallback((u: User) => {
     setUser(u);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(u));
+    saveToRegistry(u);
   }, []);
 
   const login = useCallback((phone: string, code: string): boolean => {
@@ -91,6 +135,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           newUser.nickname = existing.nickname;
           newUser.createdAt = existing.createdAt;
           newUser.isAdmin = existing.isAdmin || isAdmin;
+          newUser.premiumExpiry = existing.premiumExpiry;
+          newUser.premiumGrantedBy = existing.premiumGrantedBy;
+          // Check if expired
+          if (newUser.premiumExpiry && Date.now() > newUser.premiumExpiry) {
+            newUser.isPremium = isAdmin;
+            newUser.premiumExpiry = undefined;
+            newUser.premiumGrantedBy = undefined;
+          }
         }
       }
     } catch {}
@@ -105,9 +157,73 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const upgradeToPremium = useCallback(() => {
     if (user) {
-      saveUser({ ...user, isPremium: true });
+      saveUser({
+        ...user,
+        isPremium: true,
+        premiumGrantedBy: "stripe",
+      });
     }
   }, [user, saveUser]);
+
+  // Admin: grant premium to a user for N days
+  const grantPremium = useCallback((phone: string, durationDays: number) => {
+    try {
+      const stored = localStorage.getItem(ALL_USERS_KEY);
+      const users: User[] = stored ? JSON.parse(stored) : [];
+      const idx = users.findIndex(u => u.phone === phone);
+      if (idx >= 0) {
+        users[idx].isPremium = true;
+        users[idx].premiumExpiry = Date.now() + durationDays * 24 * 60 * 60 * 1000;
+        users[idx].premiumGrantedBy = "admin";
+        localStorage.setItem(ALL_USERS_KEY, JSON.stringify(users));
+        // If this is the current user, update state too
+        if (user && user.phone === phone) {
+          saveUser({
+            ...user,
+            isPremium: true,
+            premiumExpiry: users[idx].premiumExpiry,
+            premiumGrantedBy: "admin",
+          });
+        }
+      }
+    } catch {}
+  }, [user, saveUser]);
+
+  // Admin: revoke premium from a user
+  const revokePremium = useCallback((phone: string) => {
+    try {
+      const stored = localStorage.getItem(ALL_USERS_KEY);
+      const users: User[] = stored ? JSON.parse(stored) : [];
+      const idx = users.findIndex(u => u.phone === phone);
+      if (idx >= 0) {
+        users[idx].isPremium = false;
+        users[idx].premiumExpiry = undefined;
+        users[idx].premiumGrantedBy = undefined;
+        localStorage.setItem(ALL_USERS_KEY, JSON.stringify(users));
+        // If this is the current user, update state too
+        if (user && user.phone === phone) {
+          saveUser({
+            ...user,
+            isPremium: false,
+            premiumExpiry: undefined,
+            premiumGrantedBy: undefined,
+          });
+        }
+      }
+    } catch {}
+  }, [user, saveUser]);
+
+  // Get all registered users
+  const getAllUsers = useCallback((): User[] => {
+    try {
+      const stored = localStorage.getItem(ALL_USERS_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  }, []);
+
+  const isPremiumActive = checkPremiumActive(user);
 
   return (
     <AuthContext.Provider value={{
@@ -117,6 +233,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login,
       logout,
       upgradeToPremium,
+      grantPremium,
+      revokePremium,
+      getAllUsers,
+      isPremiumActive,
     }}>
       {children}
     </AuthContext.Provider>

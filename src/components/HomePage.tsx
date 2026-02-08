@@ -22,7 +22,7 @@ export default function HomePage() {
 
   const faqs = [
     { q: "AI占いとは何ですか？", a: "最新のAI技術を活用した占いサービスです。11人の個性豊かなAI占い師が、あなたの悩みに24時間いつでも寄り添い、的確なアドバイスを提供します。" },
-    { q: "無料で利用できますか？", a: "はい、無料プランでも鑑定回数無制限でご利用いただけます。プレミアムプラン（月額¥1,980）では、鑑定履歴の保存など追加機能がご利用いただけます。" },
+    { q: "料金はいくらですか？", a: "月額¥1,980（税込）で、全11人のAI占い師に鑑定回数無制限でご相談いただけます。一般的な占いサービスでは1回3,000〜10,000円ですので、非常にお得です。" },
     { q: "どの占い師に相談すればいいですか？", a: "お悩みの内容に合わせてお選びください。恋愛なら玲蘭、タイミングなら蒼真、性格分析なら朔夜、MBTI診断なら心理など、それぞれ専門分野があります。" },
     { q: "解約はいつでもできますか？", a: "はい、いつでも解約可能です。解約後も期間内はサービスをご利用いただけます。" },
     { q: "占いの精度はどのくらいですか？", a: "最新のAI技術を活用し、各占い師が専門的な知識に基づいてアドバイスを行います。エンターテインメントとしてお楽しみいただきつつ、実用的なアドバイスも含まれています。" },
@@ -202,64 +202,27 @@ export default function HomePage() {
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-            {/* Free Plan */}
+          <div className="max-w-lg mx-auto">
+            {/* Single Premium Plan */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
             >
-              <div className="glass-card rounded-2xl p-8 h-full flex flex-col">
-                <div className="text-center mb-6">
-                  <span className="inline-block px-4 py-1.5 rounded-full bg-gray-500/20 text-sm text-gray-300 mb-4">
-                    無料プラン
-                  </span>
-                  <div className="flex items-baseline justify-center gap-2">
-                    <span className="text-4xl font-bold text-white">¥0</span>
-                    <span className="text-sm text-gray-400">/ 月</span>
-                  </div>
-                </div>
-                <div className="space-y-3 mb-6 text-sm flex-grow">
-                  {[
-                    "鑑定回数無制限",
-                    "全11人の占い師に相談可能",
-                    "24時間いつでも利用可能",
-                  ].map((feature, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <Check className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                      <span className="text-gray-300">{feature}</span>
-                    </div>
-                  ))}
-                </div>
-                <button
-                  onClick={() => router.push(isAuthenticated ? "/dashboard" : "/login")}
-                  className="w-full py-3 rounded-full border border-gray-600 text-gray-300 hover:bg-white/5 transition-all"
-                >
-                  無料で始める
-                </button>
-              </div>
-            </motion.div>
-
-            {/* Premium Plan */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-            >
-              <div className="glass-card rounded-2xl overflow-hidden relative h-full flex flex-col">
+              <div className="glass-card rounded-2xl overflow-hidden relative">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500" />
-                <div className="p-8 flex flex-col flex-grow">
-                  <div className="text-center mb-6">
+                <div className="p-10">
+                  <div className="text-center mb-8">
                     <span className="inline-block px-4 py-1.5 rounded-full bg-gold/20 text-sm text-gold mb-4">
-                      プレミアムプラン
+                      月額プラン
                     </span>
-                    <div className="flex items-baseline justify-center gap-2">
-                      <span className="text-4xl font-bold gradient-text">¥1,980</span>
+                    <div className="flex items-baseline justify-center gap-2 mb-2">
+                      <span className="text-5xl font-bold gradient-text">¥1,980</span>
                       <span className="text-sm text-gray-400">/ 月 (税込)</span>
                     </div>
+                    <p className="text-sm text-gray-400">11人のAI占い師に、いつでも何度でも相談可能</p>
                   </div>
-                  <div className="space-y-3 mb-6 text-sm flex-grow">
+                  <div className="space-y-3 mb-8 text-sm">
                     {[
                       "鑑定回数無制限",
                       "全11人の占い師に相談可能",

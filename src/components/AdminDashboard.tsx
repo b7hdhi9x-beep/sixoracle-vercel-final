@@ -11,7 +11,7 @@ import {
   ArrowRight, ArrowLeft, Crown, Clock, Heart, Calculator,
   Lightbulb, Star, Hand, Droplet, Cat, Brain,
   Sparkles, Eye, Trash2, Search, RefreshCw,
-  TrendingUp, Activity, Calendar,
+  TrendingUp, Activity, Calendar, Gift, XCircle, CheckCircle,
 } from "lucide-react";
 
 const iconMap: Record<string, any> = {
@@ -20,17 +20,9 @@ const iconMap: Record<string, any> = {
 
 type AdminTab = "overview" | "sessions" | "users";
 
-interface StoredUser {
-  phone: string;
-  isPremium: boolean;
-  isAdmin: boolean;
-  nickname?: string;
-  createdAt: number;
-}
-
 export default function AdminDashboard() {
   const router = useRouter();
-  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { user, isAuthenticated, loading: authLoading, grantPremium, revokePremium, getAllUsers } = useAuth();
   const [activeTab, setActiveTab] = useState<AdminTab>("overview");
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -59,7 +51,6 @@ export default function AdminDashboard() {
       oracleUsage[s.oracleId] = (oracleUsage[s.oracleId] || 0) + 1;
     });
 
-    // Sessions by date (last 7 days)
     const now = Date.now();
     const dayMs = 24 * 60 * 60 * 1000;
     const last7Days = Array.from({ length: 7 }, (_, i) => {
@@ -73,7 +64,6 @@ export default function AdminDashboard() {
       };
     });
 
-    // Top oracles
     const topOracles = Object.entries(oracleUsage)
       .sort(([, a], [, b]) => b - a)
       .slice(0, 5)
@@ -82,13 +72,17 @@ export default function AdminDashboard() {
         count,
       }));
 
-    // Today's sessions
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const todaySessions = sessions.filter(s => s.createdAt >= todayStart.getTime()).length;
 
-    return { totalSessions, totalMessages, oracleUsage, last7Days, topOracles, todaySessions };
-  }, [sessions]);
+    // User stats from registry
+    const allUsers = getAllUsers();
+    const totalUsers = allUsers.length;
+    const premiumUsers = allUsers.filter(u => u.isPremium).length;
+
+    return { totalSessions, totalMessages, oracleUsage, last7Days, topOracles, todaySessions, totalUsers, premiumUsers };
+  }, [sessions, getAllUsers]);
 
   // Filtered sessions
   const filteredSessions = useMemo(() => {
@@ -166,7 +160,7 @@ export default function AdminDashboard() {
             {[
               { id: "overview" as AdminTab, label: "概要", icon: BarChart3 },
               { id: "sessions" as AdminTab, label: "鑑定履歴", icon: MessageSquare },
-              { id: "users" as AdminTab, label: "ユーザー情報", icon: Users },
+              { id: "users" as AdminTab, label: "ユーザー管理", icon: Users },
             ].map(tab => (
               <button
                 key={tab.id}
@@ -200,7 +194,7 @@ export default function AdminDashboard() {
           />
         )}
         {activeTab === "users" && (
-          <UsersTab />
+          <UsersTab grantPremium={grantPremium} revokePremium={revokePremium} getAllUsers={getAllUsers} />
         )}
       </main>
     </div>
@@ -218,8 +212,8 @@ function OverviewTab({ stats }: { stats: any }) {
         {[
           { label: "総セッション数", value: stats.totalSessions, icon: MessageSquare, color: "text-blue-400" },
           { label: "総メッセージ数", value: stats.totalMessages, icon: Activity, color: "text-green-400" },
-          { label: "本日のセッション", value: stats.todaySessions, icon: Calendar, color: "text-amber-400" },
-          { label: "利用占い師数", value: Object.keys(stats.oracleUsage).length, icon: Users, color: "text-purple-400" },
+          { label: "登録ユーザー", value: stats.totalUsers, icon: Users, color: "text-purple-400" },
+          { label: "有料会員", value: stats.premiumUsers, icon: Crown, color: "text-amber-400" },
         ].map((card, i) => (
           <motion.div
             key={i}
@@ -237,7 +231,7 @@ function OverviewTab({ stats }: { stats: any }) {
         ))}
       </div>
 
-      {/* Activity Chart (Simple bar chart) */}
+      {/* Activity Chart */}
       <div className="glass-card rounded-xl p-6">
         <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-blue-400" />
@@ -274,12 +268,16 @@ function OverviewTab({ stats }: { stats: any }) {
               <div key={i} className="flex items-center gap-3">
                 <span className="text-sm font-bold text-gray-500 w-6">{i + 1}</span>
                 <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${item.oracle.color} flex items-center justify-center overflow-hidden`}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={item.oracle.image} alt={item.oracle.name} className="w-full h-full object-cover" />
+                  {item.oracle.image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={item.oracle.image} alt="" className="w-full h-full object-cover" />
+                  ) : Icon ? (
+                    <Icon className="w-4 h-4 text-white" />
+                  ) : null}
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm text-white truncate">{item.oracle.name}</span>
+                    <span className="text-sm text-white">{item.oracle.name}</span>
                     <span className="text-xs text-gray-400">{item.count}回 ({percentage}%)</span>
                   </div>
                   <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
@@ -293,7 +291,7 @@ function OverviewTab({ stats }: { stats: any }) {
             );
           })}
           {stats.topOracles.length === 0 && (
-            <p className="text-sm text-gray-500 text-center py-4">まだデータがありません</p>
+            <p className="text-sm text-gray-500 text-center py-4">まだ鑑定データがありません</p>
           )}
         </div>
       </div>
@@ -303,11 +301,7 @@ function OverviewTab({ stats }: { stats: any }) {
 
 // ============ Sessions Tab ============
 function SessionsTab({
-  sessions,
-  searchQuery,
-  setSearchQuery,
-  selectedSession,
-  setSelectedSession,
+  sessions, searchQuery, setSearchQuery, selectedSession, setSelectedSession,
 }: {
   sessions: ChatSession[];
   searchQuery: string;
@@ -324,41 +318,32 @@ function SessionsTab({
           className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span className="text-sm">一覧に戻る</span>
+          一覧に戻る
         </button>
-
-        <div className="glass-card rounded-xl p-4">
+        <div className="glass-card rounded-xl p-6">
           <div className="flex items-center gap-3 mb-4">
-            {oracle && (
-              <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${oracle.color} overflow-hidden`}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={oracle.image} alt={oracle.name} className="w-full h-full object-cover" />
-              </div>
-            )}
+            <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${oracle?.color || "from-gray-500 to-gray-600"} flex items-center justify-center overflow-hidden`}>
+              {oracle?.image ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={oracle.image} alt="" className="w-full h-full object-cover" />
+              ) : null}
+            </div>
             <div>
               <h3 className="text-white font-semibold">{selectedSession.title}</h3>
               <p className="text-xs text-gray-400">
                 {oracle?.name} · {new Date(selectedSession.createdAt).toLocaleString("ja-JP")}
-                · {selectedSession.messages.length}メッセージ
               </p>
             </div>
           </div>
-
-          <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
-            {selectedSession.messages.map(msg => (
-              <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[80%] px-3 py-2 rounded-lg text-sm ${
+          <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+            {selectedSession.messages.map((msg, i) => (
+              <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                <div className={`max-w-[80%] p-3 rounded-xl text-sm ${
                   msg.role === "user"
                     ? "bg-blue-500/20 text-blue-100 border border-blue-500/30"
-                    : "bg-gray-800/50 text-gray-200 border border-gray-700/50"
+                    : "bg-white/5 text-gray-300 border border-gray-700"
                 }`}>
-                  {msg.role === "assistant" && oracle && (
-                    <p className="text-xs text-gold/60 mb-1">{oracle.name}</p>
-                  )}
-                  <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
-                  <p className="text-[10px] text-gray-500 mt-1 text-right">
-                    {new Date(msg.timestamp).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}
-                  </p>
+                  {msg.content}
                 </div>
               </div>
             ))}
@@ -370,128 +355,282 @@ function SessionsTab({
 
   return (
     <div className="space-y-4">
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          placeholder="セッションを検索..."
-          className="w-full bg-black/30 border border-gray-700 rounded-lg py-2.5 pl-10 pr-4 text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-red-500/50 transition-colors"
-        />
+      <div className="flex items-center gap-3">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="セッションを検索..."
+            className="w-full pl-10 pr-4 py-2.5 bg-black/30 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-red-400"
+          />
+        </div>
+        <span className="text-xs text-gray-400 whitespace-nowrap">{sessions.length}件</span>
       </div>
 
-      {/* Session List */}
       <div className="space-y-2">
-        {sessions.length === 0 ? (
-          <div className="text-center py-12">
-            <MessageSquare className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-            <p className="text-gray-400">鑑定履歴がありません</p>
-          </div>
-        ) : (
-          sessions.slice(0, 50).map(session => {
-            const oracle = getOracleById(session.oracleId);
-            return (
-              <button
-                key={session.id}
-                onClick={() => setSelectedSession(session)}
-                className="w-full glass-card rounded-lg p-3 flex items-center gap-3 hover:border-red-500/30 transition-colors text-left group"
-              >
-                {oracle && (
-                  <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${oracle.color} overflow-hidden flex-shrink-0`}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={oracle.image} alt={oracle.name} className="w-full h-full object-cover" />
-                  </div>
-                )}
+        {sessions.map((session) => {
+          const oracle = getOracleById(session.oracleId);
+          const Icon = oracle ? iconMap[oracle.icon] : null;
+          return (
+            <button
+              key={session.id}
+              onClick={() => setSelectedSession(session)}
+              className="w-full glass-card rounded-lg p-4 text-left hover:border-gray-600 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${oracle?.color || "from-gray-500 to-gray-600"} flex items-center justify-center overflow-hidden flex-shrink-0`}>
+                  {oracle?.image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={oracle.image} alt="" className="w-full h-full object-cover" />
+                  ) : Icon ? (
+                    <Icon className="w-5 h-5 text-white" />
+                  ) : null}
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
                     <h4 className="text-sm text-white truncate">{session.title}</h4>
-                    <span className="text-[10px] text-gray-500 flex-shrink-0 ml-2">
+                    <span className="text-[10px] text-gray-500 whitespace-nowrap ml-2">
                       {new Date(session.createdAt).toLocaleDateString("ja-JP")}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-xs text-gray-500">{oracle?.name}</span>
-                    <span className="text-xs text-gray-600">·</span>
-                    <span className="text-xs text-gray-500">{session.messages.length}メッセージ</span>
-                  </div>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {oracle?.name} · {session.messages.length}メッセージ
+                  </p>
                 </div>
-                <Eye className="w-4 h-4 text-gray-600 group-hover:text-red-400 transition-colors flex-shrink-0" />
-              </button>
-            );
-          })
+                <Eye className="w-4 h-4 text-gray-600 flex-shrink-0" />
+              </div>
+            </button>
+          );
+        })}
+        {sessions.length === 0 && (
+          <div className="text-center py-12">
+            <MessageSquare className="w-12 h-12 text-gray-700 mx-auto mb-3" />
+            <p className="text-sm text-gray-500">鑑定履歴がありません</p>
+          </div>
         )}
       </div>
-
-      {sessions.length > 50 && (
-        <p className="text-center text-xs text-gray-500">
-          最新50件を表示中（全{sessions.length}件）
-        </p>
-      )}
     </div>
   );
 }
 
-// ============ Users Tab ============
-function UsersTab() {
-  const [users, setUsers] = useState<StoredUser[]>([]);
+// ============ Users Tab (with Premium Grant/Revoke) ============
+function UsersTab({
+  grantPremium,
+  revokePremium,
+  getAllUsers,
+}: {
+  grantPremium: (phone: string, days: number) => void;
+  revokePremium: (phone: string) => void;
+  getAllUsers: () => any[];
+}) {
+  const [users, setUsers] = useState<any[]>([]);
+  const [grantingPhone, setGrantingPhone] = useState<string | null>(null);
+  const [grantDays, setGrantDays] = useState(30);
+  const [confirmRevoke, setConfirmRevoke] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
-    // In LocalStorage mode, we can only see the current user
-    // But we can scan for any stored user data
-    try {
-      const stored = localStorage.getItem("sixoracle_user");
-      if (stored) {
-        const user = JSON.parse(stored);
-        setUsers([user]);
-      }
-    } catch {}
+    refreshUsers();
   }, []);
+
+  const refreshUsers = () => {
+    const allUsers = getAllUsers();
+    setUsers(allUsers);
+  };
+
+  const handleGrant = (phone: string) => {
+    grantPremium(phone, grantDays);
+    setGrantingPhone(null);
+    setGrantDays(30);
+    setActionMessage({ type: "success", text: `${phone} にプレミアム権限を${grantDays}日間付与しました` });
+    setTimeout(() => setActionMessage(null), 3000);
+    refreshUsers();
+  };
+
+  const handleRevoke = (phone: string) => {
+    revokePremium(phone);
+    setConfirmRevoke(null);
+    setActionMessage({ type: "success", text: `${phone} のプレミアム権限を取り消しました` });
+    setTimeout(() => setActionMessage(null), 3000);
+    refreshUsers();
+  };
 
   return (
     <div className="space-y-4">
-      <div className="glass-card rounded-xl p-6">
-        <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-          <Users className="w-4 h-4 text-purple-400" />
-          登録ユーザー
-        </h3>
+      {/* Action Message */}
+      {actionMessage && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          className={`p-3 rounded-lg border text-sm flex items-center gap-2 ${
+            actionMessage.type === "success"
+              ? "bg-green-500/10 border-green-500/30 text-green-400"
+              : "bg-red-500/10 border-red-500/30 text-red-400"
+          }`}
+        >
+          {actionMessage.type === "success" ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+          {actionMessage.text}
+        </motion.div>
+      )}
 
-        <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 mb-4">
-          <p className="text-xs text-amber-300">
-            ※ 軽量版（LocalStorage）のため、現在ログイン中のユーザーのみ表示されます。
-            完全版（Manus版）ではサーバーサイドのデータベースで全ユーザーを管理できます。
-          </p>
+      <div className="glass-card rounded-xl p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+            <Users className="w-4 h-4 text-purple-400" />
+            登録ユーザー ({users.length}人)
+          </h3>
+          <button
+            onClick={refreshUsers}
+            className="text-gray-400 hover:text-white transition-colors p-1"
+            title="更新"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
         </div>
 
         <div className="space-y-3">
-          {users.map((u, i) => (
-            <div key={i} className="flex items-center gap-3 p-3 bg-black/20 rounded-lg border border-gray-800">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-sm font-bold text-white">
-                {u.phone?.slice(-2) || "??"}
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-white">{u.phone}</span>
-                  {u.isPremium && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                      <Crown className="w-3 h-3 inline mr-0.5" />
-                      プレミアム
-                    </span>
-                  )}
-                  {u.isAdmin && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30">
-                      <Shield className="w-3 h-3 inline mr-0.5" />
-                      管理者
-                    </span>
+          {users.map((u, i) => {
+            const isPremiumExpired = u.premiumExpiry && Date.now() > u.premiumExpiry;
+            const premiumActive = u.isPremium && !isPremiumExpired;
+
+            return (
+              <div key={i} className="p-4 bg-black/20 rounded-lg border border-gray-800">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
+                    {u.phone?.slice(-2) || "??"}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm text-white">{u.phone}</span>
+                      {premiumActive && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                          <Crown className="w-3 h-3 inline mr-0.5" />
+                          プレミアム
+                        </span>
+                      )}
+                      {isPremiumExpired && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-500/20 text-gray-400 border border-gray-500/30">
+                          期限切れ
+                        </span>
+                      )}
+                      {u.isAdmin && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30">
+                          <Shield className="w-3 h-3 inline mr-0.5" />
+                          管理者
+                        </span>
+                      )}
+                      {u.premiumGrantedBy === "admin" && premiumActive && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                          <Gift className="w-3 h-3 inline mr-0.5" />
+                          管理者付与
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      登録日: {new Date(u.createdAt).toLocaleDateString("ja-JP")}
+                      {u.premiumExpiry && premiumActive && (
+                        <span className="ml-2 text-amber-400">
+                          · 有効期限: {new Date(u.premiumExpiry).toLocaleDateString("ja-JP")}
+                        </span>
+                      )}
+                    </p>
+                  </div>
+
+                  {/* Action Buttons */}
+                  {!u.isAdmin && (
+                    <div className="flex gap-2 flex-shrink-0">
+                      {!premiumActive ? (
+                        <button
+                          onClick={() => setGrantingPhone(u.phone)}
+                          className="text-xs px-3 py-1.5 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 hover:bg-amber-500/30 transition-colors flex items-center gap-1"
+                        >
+                          <Gift className="w-3 h-3" />
+                          付与
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmRevoke(u.phone)}
+                          className="text-xs px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-colors flex items-center gap-1"
+                        >
+                          <XCircle className="w-3 h-3" />
+                          取消
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
-                <p className="text-xs text-gray-500">
-                  登録日: {new Date(u.createdAt).toLocaleDateString("ja-JP")}
-                </p>
+
+                {/* Grant Premium Dialog */}
+                {grantingPhone === u.phone && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    className="mt-3 pt-3 border-t border-gray-700"
+                  >
+                    <p className="text-xs text-gray-400 mb-2">プレミアム権限の付与期間を選択</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {[7, 14, 30, 60, 90].map(days => (
+                        <button
+                          key={days}
+                          onClick={() => setGrantDays(days)}
+                          className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+                            grantDays === days
+                              ? "bg-amber-500/30 text-amber-300 border-amber-500/50"
+                              : "bg-black/20 text-gray-400 border-gray-700 hover:border-gray-500"
+                          }`}
+                        >
+                          {days}日間
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex gap-2 mt-3">
+                      <button
+                        onClick={() => handleGrant(u.phone)}
+                        className="text-xs px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-yellow-500 text-black font-semibold hover:from-amber-600 hover:to-yellow-600 transition-all flex items-center gap-1"
+                      >
+                        <CheckCircle className="w-3 h-3" />
+                        {grantDays}日間付与する
+                      </button>
+                      <button
+                        onClick={() => setGrantingPhone(null)}
+                        className="text-xs px-4 py-2 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors"
+                      >
+                        キャンセル
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Revoke Confirmation */}
+                {confirmRevoke === u.phone && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    className="mt-3 pt-3 border-t border-gray-700"
+                  >
+                    <p className="text-xs text-red-400 mb-2">本当にプレミアム権限を取り消しますか？</p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleRevoke(u.phone)}
+                        className="text-xs px-4 py-2 rounded-lg bg-red-500/30 text-red-300 border border-red-500/50 hover:bg-red-500/40 transition-colors"
+                      >
+                        取り消す
+                      </button>
+                      <button
+                        onClick={() => setConfirmRevoke(null)}
+                        className="text-xs px-4 py-2 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors"
+                      >
+                        キャンセル
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
           {users.length === 0 && (
             <p className="text-sm text-gray-500 text-center py-4">ユーザーデータがありません</p>
           )}
@@ -507,7 +646,7 @@ function UsersTab() {
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div className="p-3 bg-black/20 rounded-lg">
             <p className="text-gray-500 text-xs mb-1">バージョン</p>
-            <p className="text-white">Vercel Lite v2.0</p>
+            <p className="text-white">Vercel Lite v2.1</p>
           </div>
           <div className="p-3 bg-black/20 rounded-lg">
             <p className="text-gray-500 text-xs mb-1">データ保存</p>
@@ -518,8 +657,8 @@ function UsersTab() {
             <p className="text-white">{oracles.length}人</p>
           </div>
           <div className="p-3 bg-black/20 rounded-lg">
-            <p className="text-gray-500 text-xs mb-1">認証方式</p>
-            <p className="text-white">デモ認証</p>
+            <p className="text-gray-500 text-xs mb-1">料金プラン</p>
+            <p className="text-white">¥1,980/月</p>
           </div>
         </div>
       </div>
