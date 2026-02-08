@@ -1,0 +1,2 @@
+ALTER TABLE `notifications` MODIFY COLUMN `type` enum('new_oracle','weekly_fortune','payment','system','campaign','referral','withdrawal','consultation_followup','monthly_fortune','daily_fortune','oracle_message') NOT NULL;--> statement-breakpoint
+ALTER TABLE `notifications` ADD `metadata` text;

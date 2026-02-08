@@ -1,0 +1,9 @@
+{
+  "query": "SELECT id, name, openId, planType, isPremium, premiumExpiresAt, dailyReadingsUsed, isTester FROM users WHERE openId LIKE '%09070174616%' OR openId LIKE '%090-7017-4616%' OR openId LIKE '%phone%7017%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user XDDKssvc1D2yUWV.0654eaeb7844 --database kufGYAjS8ccnWNwUa3NpZF --execute SELECT id, name, openId, planType, isPremium, premiumExpiresAt, dailyReadingsUsed, isTester FROM users WHERE openId LIKE '%09070174616%' OR openId LIKE '%090-7017-4616%' OR openId LIKE '%phone%7017%';",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1896
+}

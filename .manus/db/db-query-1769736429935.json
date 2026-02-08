@@ -1,0 +1,80 @@
+{
+  "query": "SELECT * FROM monthly_activation_codes ORDER BY id DESC LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user XDDKssvc1D2yUWV.0654eaeb7844 --database kufGYAjS8ccnWNwUa3NpZF --execute SELECT * FROM monthly_activation_codes ORDER BY id DESC LIMIT 5;",
+  "rows": [
+    {
+      "id": "8",
+      "code": "43LLYKUP",
+      "validMonth": "2026-01",
+      "planType": "monthly",
+      "durationDays": "30",
+      "maxUses": "NULL",
+      "currentUses": "0",
+      "status": "active",
+      "createdByAdminId": "1",
+      "adminNote": "ランダム生成 (2026-01)",
+      "createdAt": "2026-01-30 01:23:41",
+      "updatedAt": "2026-01-30 01:23:41"
+    },
+    {
+      "id": "7",
+      "code": "SIX-2026-01-M2Y5P4",
+      "validMonth": "2026-01",
+      "planType": "monthly",
+      "durationDays": "30",
+      "maxUses": "50",
+      "currentUses": "0",
+      "status": "inactive",
+      "createdByAdminId": "1",
+      "adminNote": "NULL",
+      "createdAt": "2026-01-30 01:13:15",
+      "updatedAt": "2026-01-30 01:23:41"
+    },
+    {
+      "id": "6",
+      "code": "SIX-2026-01-WU5LVY",
+      "validMonth": "2026-01",
+      "planType": "monthly",
+      "durationDays": "30",
+      "maxUses": "50",
+      "currentUses": "0",
+      "status": "inactive",
+      "createdByAdminId": "1",
+      "adminNote": "NULL",
+      "createdAt": "2026-01-30 00:49:45",
+      "updatedAt": "2026-01-30 01:13:22"
+    },
+    {
+      "id": "5",
+      "code": "SIX-2026-01-HJ8DHE",
+      "validMonth": "2026-01",
+      "planType": "monthly",
+      "durationDays": "30",
+      "maxUses": "50",
+      "currentUses": "0",
+      "status": "inactive",
+      "createdByAdminId": "1",
+      "adminNote": "NULL",
+      "createdAt": "2026-01-30 00:46:10",
+      "updatedAt": "2026-01-30 00:49:27"
+    },
+    {
+      "id": "4",
+      "code": "SIXORACLE2026",
+      "validMonth": "2026-01",
+      "planType": "monthly",
+      "durationDays": "30",
+      "maxUses": "NULL",
+      "currentUses": "2",
+      "status": "inactive",
+      "createdByAdminId": "1",
+      "adminNote": "2026年1月限定 全ユーザー共通合言葉",
+      "createdAt": "2026-01-30 00:20:32",
+      "updatedAt": "2026-01-30 00:48:52"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcode\tvalidMonth\tplanType\tdurationDays\tmaxUses\tcurrentUses\tstatus\tcreatedByAdminId\tadminNote\tcreatedAt\tupdatedAt\n8\t43LLYKUP\t2026-01\tmonthly\t30\tNULL\t0\tactive\t1\tランダム生成 (2026-01)\t2026-01-30 01:23:41\t2026-01-30 01:23:41\n7\tSIX-2026-01-M2Y5P4\t2026-01\tmonthly\t30\t50\t0\tinactive\t1\tNULL\t2026-01-30 01:13:15\t2026-01-30 01:23:41\n6\tSIX-2026-01-WU5LVY\t2026-01\tmonthly\t30\t50\t0\tinactive\t1\tNULL\t2026-01-30 00:49:45\t2026-01-30 01:13:22\n5\tSIX-2026-01-HJ8DHE\t2026-01\tmonthly\t30\t50\t0\tinactive\t1\tNULL\t2026-01-30 00:46:10\t2026-01-30 00:49:27\n4\tSIXORACLE2026\t2026-01\tmonthly\t30\tNULL\t2\tinactive\t1\t2026年1月限定 全ユーザー共通合言葉\t2026-01-30 00:20:32\t2026-01-30 00:48:52\n",
+  "stderr": "",
+  "execution_time_ms": 1563
+}

@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE scheduled_messages \n  MODIFY COLUMN messageType ENUM('weekly_fortune', 'seasonal', 'special', 'daily_fortune', 'calendar_event', 'anniversary_today', 'anniversary_reminder', 'daily_greeting') NOT NULL,\n  ADD COLUMN IF NOT EXISTS title VARCHAR(200) NULL AFTER messageType,\n  ADD COLUMN IF NOT EXISTS status ENUM('pending', 'sent', 'failed') NOT NULL DEFAULT 'pending' AFTER content,\n  ADD COLUMN IF NOT EXISTS sentAt TIMESTAMP NULL AFTER scheduledAt;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user XDDKssvc1D2yUWV.0654eaeb7844 --database kufGYAjS8ccnWNwUa3NpZF --execute ALTER TABLE scheduled_messages \n  MODIFY COLUMN messageType ENUM('weekly_fortune', 'seasonal', 'special', 'daily_fortune', 'calendar_event', 'anniversary_today', 'anniversary_reminder', 'daily_greeting') NOT NULL,\n  ADD COLUMN IF NOT EXISTS title VARCHAR(200) NULL AFTER messageType,\n  ADD COLUMN IF NOT EXISTS status ENUM('pending', 'sent', 'failed') NOT NULL DEFAULT 'pending' AFTER content,\n  ADD COLUMN IF NOT EXISTS sentAt TIMESTAMP NULL AFTER scheduledAt;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 3814
+}

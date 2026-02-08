@@ -1,0 +1,1 @@
+ALTER TABLE `referral_rewards` MODIFY COLUMN `status` enum('waiting_30days','waiting_90days','pending','approved','paid','cancelled') NOT NULL DEFAULT 'waiting_90days';

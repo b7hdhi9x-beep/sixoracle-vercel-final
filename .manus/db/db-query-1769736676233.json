@@ -1,0 +1,17 @@
+{
+  "query": "SELECT id, name, email, role, openId FROM users WHERE role = 'admin' LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user XDDKssvc1D2yUWV.0654eaeb7844 --database kufGYAjS8ccnWNwUa3NpZF --execute SELECT id, name, email, role, openId FROM users WHERE role = 'admin' LIMIT 5;",
+  "rows": [
+    {
+      "id": "1",
+      "name": "啓作 武部",
+      "email": "b7hdhi9x@icloud.com",
+      "role": "admin",
+      "openId": "C4vi3cDqfrMqWHw94Fgzza"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\trole\topenId\n1\t啓作 武部\tb7hdhi9x@icloud.com\tadmin\tC4vi3cDqfrMqWHw94Fgzza\n",
+  "stderr": "",
+  "execution_time_ms": 1526
+}

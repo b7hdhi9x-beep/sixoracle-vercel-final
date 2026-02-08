@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO monthly_activation_codes (code, validMonth, planType, durationDays, maxUses, currentUses, status, createdByAdminId, adminNote, createdAt, updatedAt) VALUES ('SIXORACLE2026', '2026-01', 'monthly', 30, NULL, 0, 'active', 1, '2026年1月限定 全ユーザー共通合言葉', NOW(), NOW());",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user XDDKssvc1D2yUWV.0654eaeb7844 --database kufGYAjS8ccnWNwUa3NpZF --execute INSERT INTO monthly_activation_codes (code, validMonth, planType, durationDays, maxUses, currentUses, status, createdByAdminId, adminNote, createdAt, updatedAt) VALUES ('SIXORACLE2026', '2026-01', 'monthly', 30, NULL, 0, 'active', 1, '2026年1月限定 全ユーザー共通合言葉', NOW(), NOW());",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1533
+}

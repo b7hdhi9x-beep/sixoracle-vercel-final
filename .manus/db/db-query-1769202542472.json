@@ -1,0 +1,33 @@
+{
+  "query": "SELECT * FROM users LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user XDDKssvc1D2yUWV.0654eaeb7844 --database kufGYAjS8ccnWNwUa3NpZF --execute SELECT * FROM users LIMIT 5;",
+  "rows": [
+    {
+      "id": "1",
+      "openId": "C4vi3cDqfrMqWHw94Fgzza",
+      "name": "啓作 武部",
+      "email": "b7hdhi9x@icloud.com",
+      "loginMethod": "apple",
+      "role": "admin",
+      "createdAt": "2026-01-20 01:51:50",
+      "updatedAt": "2026-01-23 21:08:47",
+      "lastSignedIn": "2026-01-23 21:08:48",
+      "isPremium": "1",
+      "stripeCustomerId": "cus_TpGtrEBU4jyGOL",
+      "stripeSubscriptionId": "sub_1SrcLwGNWrqrW6zsCA96wm8A",
+      "subscriptionStatus": "active",
+      "displayName": "NULL",
+      "birthDate": "NULL",
+      "zodiacSign": "NULL",
+      "bio": "NULL",
+      "avatarUrl": "NULL",
+      "totalFreeReadings": "5",
+      "usedFreeReadings": "0",
+      "bonusReadings": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\topenId\tname\temail\tloginMethod\trole\tcreatedAt\tupdatedAt\tlastSignedIn\tisPremium\tstripeCustomerId\tstripeSubscriptionId\tsubscriptionStatus\tdisplayName\tbirthDate\tzodiacSign\tbio\tavatarUrl\ttotalFreeReadings\tusedFreeReadings\tbonusReadings\n1\tC4vi3cDqfrMqWHw94Fgzza\t啓作 武部\tb7hdhi9x@icloud.com\tapple\tadmin\t2026-01-20 01:51:50\t2026-01-23 21:08:47\t2026-01-23 21:08:48\t1\tcus_TpGtrEBU4jyGOL\tsub_1SrcLwGNWrqrW6zsCA96wm8A\tactive\tNULL\tNULL\tNULL\tNULL\tNULL\t5\t0\t0\n",
+  "stderr": "",
+  "execution_time_ms": 1537
+}

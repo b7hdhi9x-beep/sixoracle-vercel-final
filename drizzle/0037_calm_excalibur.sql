@@ -1,0 +1,1 @@
+ALTER TABLE `cancellation_feedback` MODIFY COLUMN `reason` enum('price','not_useful','not_accurate','found_alternative','temporary','other') NOT NULL;

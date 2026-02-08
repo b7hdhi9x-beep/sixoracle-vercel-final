@@ -1,0 +1,1 @@
+ALTER TABLE `intimacy_rewards` MODIFY COLUMN `rewardType` enum('title','image_style','special_greeting','exclusive_advice','anniversary_message','custom_avatar','exclusive_menu','deep_reading','special_prompt') NOT NULL;

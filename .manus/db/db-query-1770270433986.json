@@ -1,0 +1,18 @@
+{
+  "query": "SELECT id, name, openId, planType, isPremium, premiumExpiresAt FROM users WHERE planType = 'trial' OR planType IS NULL ORDER BY id DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user XDDKssvc1D2yUWV.0654eaeb7844 --database kufGYAjS8ccnWNwUa3NpZF --execute SELECT id, name, openId, planType, isPremium, premiumExpiresAt FROM users WHERE planType = 'trial' OR planType IS NULL ORDER BY id DESC;",
+  "rows": [
+    {
+      "id": "1800003",
+      "name": "NULL",
+      "openId": "phone_b3e2580b9adf239ba71baf5a8905538f",
+      "planType": "trial",
+      "isPremium": "0",
+      "premiumExpiresAt": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\topenId\tplanType\tisPremium\tpremiumExpiresAt\n1800003\tNULL\tphone_b3e2580b9adf239ba71baf5a8905538f\ttrial\t0\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 1535
+}

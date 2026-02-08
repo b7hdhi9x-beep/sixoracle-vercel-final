@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE users ADD COLUMN IF NOT EXISTS isBlocked BOOLEAN NOT NULL DEFAULT FALSE;\nALTER TABLE users ADD COLUMN IF NOT EXISTS blockReason ENUM('bot_detected', 'rate_limit_abuse', 'manual_block', 'terms_violation', 'other') NULL;\nALTER TABLE users ADD COLUMN IF NOT EXISTS blockedAt TIMESTAMP NULL;\nALTER TABLE users ADD COLUMN IF NOT EXISTS blockedBy INT NULL;\nALTER TABLE users ADD COLUMN IF NOT EXISTS blockNote TEXT NULL;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user XDDKssvc1D2yUWV.0654eaeb7844 --database kufGYAjS8ccnWNwUa3NpZF --execute ALTER TABLE users ADD COLUMN IF NOT EXISTS isBlocked BOOLEAN NOT NULL DEFAULT FALSE;\nALTER TABLE users ADD COLUMN IF NOT EXISTS blockReason ENUM('bot_detected', 'rate_limit_abuse', 'manual_block', 'terms_violation', 'other') NULL;\nALTER TABLE users ADD COLUMN IF NOT EXISTS blockedAt TIMESTAMP NULL;\nALTER TABLE users ADD COLUMN IF NOT EXISTS blockedBy INT NULL;\nALTER TABLE users ADD COLUMN IF NOT EXISTS blockNote TEXT NULL;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 2538
+}

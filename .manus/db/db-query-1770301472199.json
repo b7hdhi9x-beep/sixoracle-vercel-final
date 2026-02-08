@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS `mbti_history` (\n  `id` int AUTO_INCREMENT NOT NULL,\n  `userId` int NOT NULL,\n  `mbtiType` varchar(4) NOT NULL,\n  `eScore` int NOT NULL DEFAULT 0,\n  `sScore` int NOT NULL DEFAULT 0,\n  `tScore` int NOT NULL DEFAULT 0,\n  `jScore` int NOT NULL DEFAULT 0,\n  `testSource` enum('quick_test','full_test','chat') NOT NULL DEFAULT 'quick_test',\n  `notes` text,\n  `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  CONSTRAINT `mbti_history_id` PRIMARY KEY(`id`)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user XDDKssvc1D2yUWV.0654eaeb7844 --database kufGYAjS8ccnWNwUa3NpZF --execute CREATE TABLE IF NOT EXISTS `mbti_history` (\n  `id` int AUTO_INCREMENT NOT NULL,\n  `userId` int NOT NULL,\n  `mbtiType` varchar(4) NOT NULL,\n  `eScore` int NOT NULL DEFAULT 0,\n  `sScore` int NOT NULL DEFAULT 0,\n  `tScore` int NOT NULL DEFAULT 0,\n  `jScore` int NOT NULL DEFAULT 0,\n  `testSource` enum('quick_test','full_test','chat') NOT NULL DEFAULT 'quick_test',\n  `notes` text,\n  `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  CONSTRAINT `mbti_history_id` PRIMARY KEY(`id`)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1915
+}

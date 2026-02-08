@@ -1,0 +1,1 @@
+ALTER TABLE `suspicious_activity_logs` MODIFY COLUMN `activityType` enum('bot_detected','rate_limit_abuse','repetitive_messages','automated_pattern','high_frequency','admin_session_delete') NOT NULL;

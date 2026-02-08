@@ -1,0 +1,80 @@
+{
+  "query": "SELECT id, name, email, planType, isPremium, premiumExpiresAt, dailyReadingsUsed, lastDailyReset FROM users WHERE isPremium = 1 LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user XDDKssvc1D2yUWV.0654eaeb7844 --database kufGYAjS8ccnWNwUa3NpZF --execute SELECT id, name, email, planType, isPremium, premiumExpiresAt, dailyReadingsUsed, lastDailyReset FROM users WHERE isPremium = 1 LIMIT 10;",
+  "rows": [
+    {
+      "id": "660486",
+      "name": "武部啓作",
+      "email": "b7hdhi9x@icloud.com",
+      "planType": "premium",
+      "isPremium": "1",
+      "premiumExpiresAt": "2026-02-28 00:49:17",
+      "dailyReadingsUsed": "0",
+      "lastDailyReset": "2026-01-30"
+    },
+    {
+      "id": "750041",
+      "name": "b7hdhi9x",
+      "email": "b7hdhi9x@yahoo.co.jp",
+      "planType": "premium",
+      "isPremium": "1",
+      "premiumExpiresAt": "2026-02-28 00:13:15",
+      "dailyReadingsUsed": "0",
+      "lastDailyReset": "2026-01-30"
+    },
+    {
+      "id": "1800013",
+      "name": "NULL",
+      "email": "NULL",
+      "planType": "premium",
+      "isPremium": "1",
+      "premiumExpiresAt": "2026-03-01 01:53:37",
+      "dailyReadingsUsed": "0",
+      "lastDailyReset": "2026-01-31"
+    },
+    {
+      "id": "1800033",
+      "name": "NULL",
+      "email": "NULL",
+      "planType": "premium",
+      "isPremium": "1",
+      "premiumExpiresAt": "2026-03-01 00:29:04",
+      "dailyReadingsUsed": "0",
+      "lastDailyReset": "2026-01-29"
+    },
+    {
+      "id": "2040089",
+      "name": "ユーザー5678",
+      "email": "NULL",
+      "planType": "premium",
+      "isPremium": "1",
+      "premiumExpiresAt": "2026-03-01 00:41:56",
+      "dailyReadingsUsed": "0",
+      "lastDailyReset": "NULL"
+    },
+    {
+      "id": "2040177",
+      "name": "ユーザー8888",
+      "email": "NULL",
+      "planType": "premium",
+      "isPremium": "1",
+      "premiumExpiresAt": "2026-03-01 01:28:26",
+      "dailyReadingsUsed": "0",
+      "lastDailyReset": "NULL"
+    },
+    {
+      "id": "2040179",
+      "name": "ユーザー2222",
+      "email": "NULL",
+      "planType": "premium",
+      "isPremium": "1",
+      "premiumExpiresAt": "2026-03-01 01:44:26",
+      "dailyReadingsUsed": "0",
+      "lastDailyReset": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\tplanType\tisPremium\tpremiumExpiresAt\tdailyReadingsUsed\tlastDailyReset\n660486\t武部啓作\tb7hdhi9x@icloud.com\tpremium\t1\t2026-02-28 00:49:17\t0\t2026-01-30\n750041\tb7hdhi9x\tb7hdhi9x@yahoo.co.jp\tpremium\t1\t2026-02-28 00:13:15\t0\t2026-01-30\n1800013\tNULL\tNULL\tpremium\t1\t2026-03-01 01:53:37\t0\t2026-01-31\n1800033\tNULL\tNULL\tpremium\t1\t2026-03-01 00:29:04\t0\t2026-01-29\n2040089\tユーザー5678\tNULL\tpremium\t1\t2026-03-01 00:41:56\t0\tNULL\n2040177\tユーザー8888\tNULL\tpremium\t1\t2026-03-01 01:28:26\t0\tNULL\n2040179\tユーザー2222\tNULL\tpremium\t1\t2026-03-01 01:44:26\t0\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 1549
+}
