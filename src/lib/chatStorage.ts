@@ -110,14 +110,12 @@ export function incrementDailyUsage(): DailyUsage {
   return usage;
 }
 
-export function canSendMessage(isPremium: boolean): boolean {
-  const usage = getDailyUsage();
-  const limit = isPremium ? 100 : 3;
-  return usage.count < limit;
+export function canSendMessage(_isPremium: boolean): boolean {
+  // 無制限 - 常に送信可能
+  return true;
 }
 
-export function getRemainingMessages(isPremium: boolean): number {
-  const usage = getDailyUsage();
-  const limit = isPremium ? 100 : 3;
-  return Math.max(0, limit - usage.count);
+export function getRemainingMessages(_isPremium: boolean): number {
+  // 無制限 - 表示用に大きな数値を返す
+  return Infinity;
 }

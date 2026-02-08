@@ -22,7 +22,7 @@ export default function HomePage() {
 
   const faqs = [
     { q: "AI占いとは何ですか？", a: "最新のAI技術を活用した占いサービスです。11人の個性豊かなAI占い師が、あなたの悩みに24時間いつでも寄り添い、的確なアドバイスを提供します。" },
-    { q: "無料で利用できますか？", a: "はい、無料トライアルとして1日3回まで鑑定を受けることができます。より多くの鑑定をご希望の場合は、月額プランをご検討ください。" },
+    { q: "無料で利用できますか？", a: "はい、無料プランでも鑑定回数無制限でご利用いただけます。プレミアムプラン（月額¥1,980）では、鑑定履歴の保存など追加機能がご利用いただけます。" },
     { q: "どの占い師に相談すればいいですか？", a: "お悩みの内容に合わせてお選びください。恋愛なら玲蘭、タイミングなら蒼真、性格分析なら朔夜、MBTI診断なら心理など、それぞれ専門分野があります。" },
     { q: "解約はいつでもできますか？", a: "はい、いつでも解約可能です。解約後も期間内はサービスをご利用いただけます。" },
     { q: "占いの精度はどのくらいですか？", a: "最新のAI技術を活用し、各占い師が専門的な知識に基づいてアドバイスを行います。エンターテインメントとしてお楽しみいただきつつ、実用的なアドバイスも含まれています。" },
@@ -221,7 +221,7 @@ export default function HomePage() {
                 </div>
                 <div className="space-y-3 mb-6 text-sm flex-grow">
                   {[
-                    "1日3回まで鑑定可能",
+                    "鑑定回数無制限",
                     "全11人の占い師に相談可能",
                     "24時間いつでも利用可能",
                   ].map((feature, i) => (
@@ -255,13 +255,13 @@ export default function HomePage() {
                       プレミアムプラン
                     </span>
                     <div className="flex items-baseline justify-center gap-2">
-                      <span className="text-4xl font-bold gradient-text">¥980</span>
+                      <span className="text-4xl font-bold gradient-text">¥1,980</span>
                       <span className="text-sm text-gray-400">/ 月 (税込)</span>
                     </div>
                   </div>
                   <div className="space-y-3 mb-6 text-sm flex-grow">
                     {[
-                      "1日100回まで鑑定可能",
+                      "鑑定回数無制限",
                       "全11人の占い師に相談可能",
                       "24時間いつでも利用可能",
                       "鑑定履歴の保存",
@@ -281,7 +281,7 @@ export default function HomePage() {
                     <ArrowRight className="w-5 h-5" />
                   </button>
                   <p className="text-center text-xs text-gray-500 mt-3">
-                    ※ 無料トライアル: 1日3回まで鑑定可能
+                    ※ いつでも解約可能です
                   </p>
                 </div>
               </div>

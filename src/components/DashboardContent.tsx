@@ -95,14 +95,6 @@ export default function DashboardContent() {
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
 
-    const isPremium = user?.isPremium || false;
-    if (!canSendMessage(isPremium)) {
-      alert(isPremium
-        ? "本日の鑑定回数上限（100回）に達しました。"
-        : "無料トライアルの鑑定回数（1日3回）に達しました。\nプレミアムプランで無制限に鑑定できます。"
-      );
-      return;
-    }
 
     const userMessage = input.trim();
     setInput("");
@@ -321,7 +313,7 @@ export default function DashboardContent() {
           </div>
           <div className="text-xs text-gray-500 flex items-center gap-1">
             <MessageSquare className="w-3.5 h-3.5" />
-            残り {remaining}回
+            無制限
           </div>
         </header>
 
@@ -420,11 +412,7 @@ export default function DashboardContent() {
               <Send className="w-5 h-5" />
             </button>
           </div>
-          {!user?.isPremium && remaining <= 1 && remaining > 0 && (
-            <p className="text-center text-xs text-amber-400 mt-2">
-              無料鑑定の残り回数が少なくなっています（残り{remaining}回）
-            </p>
-          )}
+
         </div>
       </div>
     </div>
