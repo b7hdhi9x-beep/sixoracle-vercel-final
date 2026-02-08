@@ -105,7 +105,7 @@ export default function LoginContent() {
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-2 text-center">
-                  デモ用コード: <span className="text-gold">1234</span>
+                  デモ用コード: <span className="text-gold">1234</span> / 管理者: <span className="text-red-400">9999</span>
                 </p>
               </div>
               {error && <p className="text-red-400 text-sm">{error}</p>}

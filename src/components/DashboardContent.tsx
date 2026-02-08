@@ -1,7 +1,6 @@
 "use client";
-
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { oracles, getOracleById } from "@/lib/oracles";
 import {
@@ -13,7 +12,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Send, Menu, X, LogOut, Crown, Sparkles, Trash2, Plus,
   Clock, Heart, Calculator, Lightbulb, Moon, Shield, Star,
-  Hand, Droplet, Cat, Brain, MessageSquare,
+  Hand, Droplet, Cat, Brain, MessageSquare, Settings,
 } from "lucide-react";
 
 const iconMap: Record<string, any> = {
@@ -22,6 +21,7 @@ const iconMap: Record<string, any> = {
 
 export default function DashboardContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, isAuthenticated, loading: authLoading, logout } = useAuth();
   const [selectedOracle, setSelectedOracle] = useState(oracles[0]);
   const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
@@ -32,6 +32,19 @@ export default function DashboardContent() {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Handle oracle selection from URL params
+  useEffect(() => {
+    const oracleId = searchParams.get("oracle");
+    if (oracleId) {
+      const oracle = getOracleById(oracleId);
+      if (oracle) {
+        setSelectedOracle(oracle);
+        setCurrentSession(null);
+        setMessages([]);
+      }
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -184,7 +197,7 @@ export default function DashboardContent() {
                 </button>
               </div>
 
-              {/* Oracle Grid */}
+              {/* Oracle Grid with images */}
               <div className="p-3 border-b border-gray-800">
                 <p className="text-xs text-gray-500 uppercase tracking-wider mb-2 px-2">占い師を選ぶ</p>
                 <div className="grid grid-cols-4 gap-2">
@@ -200,12 +213,9 @@ export default function DashboardContent() {
                         }`}
                         title={oracle.name}
                       >
-                        <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${oracle.color} flex items-center justify-center overflow-hidden`}>
-                          {oracle.avatar ? (
-                            <img src={oracle.avatar} alt={oracle.name} className="w-full h-full object-cover" />
-                          ) : (
-                            Icon && <Icon className="w-4 h-4 text-white" />
-                          )}
+                        <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${oracle.color} flex items-center justify-center overflow-hidden shadow-md`}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={oracle.image} alt={oracle.name} className="w-full h-full object-cover" />
                         </div>
                         <span className="text-[10px] text-gray-400 truncate w-full text-center">
                           {oracle.name}
@@ -264,20 +274,29 @@ export default function DashboardContent() {
                       </p>
                     </div>
                   </div>
-                  <button onClick={logout} className="text-gray-500 hover:text-red-400 transition-colors">
-                    <LogOut className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {user?.isAdmin && (
+                      <button
+                        onClick={() => { router.push("/admin"); setSidebarOpen(false); }}
+                        className="text-red-400 hover:text-red-300 transition-colors"
+                        title="管理画面"
+                      >
+                        <Settings className="w-4 h-4" />
+                      </button>
+                    )}
+                    <button onClick={logout} className="text-gray-500 hover:text-red-400 transition-colors">
+                      <LogOut className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
                 {!user?.isPremium && (
-                  <a
-                    href="https://buy.stripe.com/test_placeholder"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    onClick={() => alert("Stripe決済は準備中です。")}
                     className="block w-full text-center py-2 rounded-lg bg-gradient-to-r from-amber-500 to-yellow-500 text-black text-sm font-semibold hover:from-amber-600 hover:to-yellow-600 transition-all"
                   >
                     <Crown className="w-4 h-4 inline mr-1" />
                     プレミアムに登録
-                  </a>
+                  </button>
                 )}
               </div>
             </motion.aside>
@@ -293,11 +312,8 @@ export default function DashboardContent() {
             <Menu className="w-6 h-6" />
           </button>
           <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${selectedOracle.color} flex items-center justify-center shadow-lg overflow-hidden`}>
-            {selectedOracle.avatar ? (
-              <img src={selectedOracle.avatar} alt={selectedOracle.name} className="w-full h-full object-cover" />
-            ) : (
-              OracleIcon && <OracleIcon className="w-5 h-5 text-white" />
-            )}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={selectedOracle.image} alt={selectedOracle.name} className="w-full h-full object-cover" />
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-lg font-serif text-gold truncate">{selectedOracle.name}</h1>
@@ -313,14 +329,12 @@ export default function DashboardContent() {
         <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center">
-              <div className={`w-20 h-20 rounded-full bg-gradient-to-br ${selectedOracle.color} flex items-center justify-center mb-4 shadow-xl overflow-hidden`}>
-                {selectedOracle.avatar ? (
-                  <img src={selectedOracle.avatar} alt={selectedOracle.name} className="w-full h-full object-cover" />
-                ) : (
-                  OracleIcon && <OracleIcon className="w-10 h-10 text-white" />
-                )}
+              <div className={`w-24 h-24 rounded-full bg-gradient-to-br ${selectedOracle.color} flex items-center justify-center mb-4 shadow-xl overflow-hidden`}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={selectedOracle.image} alt={selectedOracle.name} className="w-full h-full object-cover" />
               </div>
               <h2 className="text-xl font-serif text-gold mb-2">{selectedOracle.name}</h2>
+              <p className="text-xs text-gray-500 uppercase tracking-widest mb-2">{selectedOracle.englishName}</p>
               <p className="text-sm text-gray-400 max-w-md mb-6">{selectedOracle.description}</p>
               <div className="flex flex-wrap justify-center gap-2">
                 {["今日の運勢を教えて", "恋愛について相談したい", "仕事の悩みがあります"].map((suggestion, i) => (
@@ -338,13 +352,21 @@ export default function DashboardContent() {
 
           {messages.map((msg) => (
             <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-[85%] md:max-w-[70%] px-4 py-3 ${
+              {msg.role === "assistant" && (
+                <div className="w-8 h-8 rounded-full overflow-hidden mr-2 flex-shrink-0 mt-1">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={selectedOracle.image} alt={selectedOracle.name} className="w-full h-full object-cover" />
+                </div>
+              )}
+              <div className={`max-w-[80%] md:max-w-[65%] px-4 py-3 ${
                 msg.role === "user" ? "chat-bubble-user" : "chat-bubble-oracle"
               }`}>
                 {msg.role === "assistant" && (
                   <p className="text-xs text-gold/60 mb-1 font-serif">{selectedOracle.name}</p>
                 )}
-                <p className="text-sm text-gray-200 whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                <div className="text-sm text-gray-200 whitespace-pre-wrap leading-relaxed chat-markdown"
+                  dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }}
+                />
                 <p className="text-[10px] text-gray-600 mt-1 text-right">
                   {new Date(msg.timestamp).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}
                 </p>
@@ -354,6 +376,10 @@ export default function DashboardContent() {
 
           {isLoading && (
             <div className="flex justify-start">
+              <div className="w-8 h-8 rounded-full overflow-hidden mr-2 flex-shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={selectedOracle.image} alt={selectedOracle.name} className="w-full h-full object-cover" />
+              </div>
               <div className="chat-bubble-oracle px-4 py-3">
                 <p className="text-xs text-gold/60 mb-2 font-serif">{selectedOracle.typingMessage}</p>
                 <div className="flex gap-1.5">
@@ -403,4 +429,12 @@ export default function DashboardContent() {
       </div>
     </div>
   );
+}
+
+// Simple markdown-like formatting
+function formatMessage(content: string): string {
+  return content
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/\n/g, '<br/>');
 }

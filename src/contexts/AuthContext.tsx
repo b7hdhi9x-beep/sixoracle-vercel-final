@@ -5,6 +5,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 interface User {
   phone: string;
   isPremium: boolean;
+  isAdmin: boolean;
   nickname?: string;
   createdAt: number;
 }
@@ -28,7 +29,11 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 const DEMO_CODE = "1234";
+const ADMIN_CODE = "9999";
 const STORAGE_KEY = "sixoracle_user";
+
+// Admin phone numbers (can be extended)
+const ADMIN_PHONES = ["090-0000-0000", "admin"];
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -38,7 +43,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
-        setUser(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        // Ensure isAdmin field exists for backwards compatibility
+        if (parsed.isAdmin === undefined) {
+          parsed.isAdmin = ADMIN_PHONES.includes(parsed.phone);
+        }
+        setUser(parsed);
       }
     } catch {}
     setLoading(false);
@@ -50,10 +60,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = useCallback((phone: string, code: string): boolean => {
+    // Admin login with special code
+    if (code === ADMIN_CODE) {
+      const adminUser: User = {
+        phone,
+        isPremium: true,
+        isAdmin: true,
+        createdAt: Date.now(),
+      };
+      saveUser(adminUser);
+      return true;
+    }
+
     if (code !== DEMO_CODE) return false;
+
+    const isAdmin = ADMIN_PHONES.includes(phone);
     const newUser: User = {
       phone,
-      isPremium: false,
+      isPremium: isAdmin,
+      isAdmin,
       createdAt: Date.now(),
     };
     // Check if existing user
@@ -62,9 +87,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (stored) {
         const existing = JSON.parse(stored);
         if (existing.phone === phone) {
-          newUser.isPremium = existing.isPremium;
+          newUser.isPremium = existing.isPremium || isAdmin;
           newUser.nickname = existing.nickname;
           newUser.createdAt = existing.createdAt;
+          newUser.isAdmin = existing.isAdmin || isAdmin;
         }
       }
     } catch {}
