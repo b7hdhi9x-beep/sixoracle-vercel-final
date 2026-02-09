@@ -677,18 +677,123 @@ function UsersTab() {
 
 // ============ System Tab ============
 function SystemTab() {
+  const router = useRouter();
   const [clearConfirm, setClearConfirm] = useState<string | null>(null);
+  const [testLoginDone, setTestLoginDone] = useState(false);
 
   const handleClearData = (key: string, label: string) => {
     try {
       localStorage.removeItem(key);
       setClearConfirm(null);
       alert(`${label}を削除しました。ページを再読み込みしてください。`);
+    } catch {};
+  };
+
+  // テスト用：プレミアム付きアカウントを作成してダッシュボードに遷移
+  const handleTestLogin = (type: "admin" | "premium" | "free") => {
+    const STORAGE_KEY = "sixoracle_user";
+    const ALL_USERS_KEY = "sixoracle_all_users";
+    
+    const testUsers = {
+      admin: {
+        phone: "admin-test",
+        isPremium: true,
+        isAdmin: true,
+        nickname: "テスト管理者",
+        createdAt: Date.now(),
+      },
+      premium: {
+        phone: "premium-test",
+        isPremium: true,
+        isAdmin: false,
+        nickname: "テストプレミアム",
+        createdAt: Date.now(),
+        premiumExpiry: Date.now() + 365 * 24 * 60 * 60 * 1000,
+        premiumGrantedBy: "admin",
+      },
+      free: {
+        phone: "free-test",
+        isPremium: false,
+        isAdmin: false,
+        nickname: "テスト無料",
+        createdAt: Date.now(),
+      },
+    };
+
+    const testUser = testUsers[type];
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(testUser));
+    
+    // ユーザーレジストリにも追加
+    try {
+      const stored = localStorage.getItem(ALL_USERS_KEY);
+      const users = stored ? JSON.parse(stored) : [];
+      const idx = users.findIndex((u: any) => u.phone === testUser.phone);
+      if (idx >= 0) {
+        users[idx] = testUser;
+      } else {
+        users.push(testUser);
+      }
+      localStorage.setItem(ALL_USERS_KEY, JSON.stringify(users));
     } catch {}
+
+    setTestLoginDone(true);
+    setTimeout(() => {
+      window.location.href = "/dashboard";
+    }, 500);
   };
 
   return (
     <div className="space-y-6">
+      {/* Test Login Section */}
+      <div className="glass-card rounded-xl p-6 border border-amber-900/30">
+        <h3 className="text-sm font-semibold text-amber-400 mb-2 flex items-center gap-2">
+          <Unlock className="w-4 h-4" />
+          テスト用クイックログイン
+        </h3>
+        <p className="text-xs text-gray-400 mb-4">
+          ワンクリックでテスト用アカウントを作成し、ダッシュボードに遷移します。全11人の占い師で鑑定をテストできます。
+        </p>
+        {testLoginDone ? (
+          <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30 text-green-400 text-sm flex items-center gap-2">
+            <CheckCircle className="w-4 h-4" />
+            ログイン成功！ダッシュボードに遷移します...
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <button
+              onClick={() => handleTestLogin("admin")}
+              className="p-4 rounded-lg bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 transition-colors text-left"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <Shield className="w-5 h-5 text-red-400" />
+                <span className="text-sm font-semibold text-red-400">管理者テスト</span>
+              </div>
+              <p className="text-xs text-gray-400">全機能アクセス可能。管理画面 + 全占い師鑑定</p>
+            </button>
+            <button
+              onClick={() => handleTestLogin("premium")}
+              className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 transition-colors text-left"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <Crown className="w-5 h-5 text-amber-400" />
+                <span className="text-sm font-semibold text-amber-400">プレミアムテスト</span>
+              </div>
+              <p className="text-xs text-gray-400">有料会員として全占い師で鑑定テスト可能</p>
+            </button>
+            <button
+              onClick={() => handleTestLogin("free")}
+              className="p-4 rounded-lg bg-gray-500/10 border border-gray-500/30 hover:bg-gray-500/20 transition-colors text-left"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <Users className="w-5 h-5 text-gray-400" />
+                <span className="text-sm font-semibold text-gray-400">無料ユーザーテスト</span>
+              </div>
+              <p className="text-xs text-gray-400">課金ゲートの動作確認。鑑定は不可</p>
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* System Info */}
       <div className="glass-card rounded-xl p-6">
         <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">

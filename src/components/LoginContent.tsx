@@ -37,7 +37,7 @@ export default function LoginContent() {
     if (success) {
       router.push("/dashboard");
     } else {
-      setError("認証コードが正しくありません（デモ: 1234）");
+      setError("認証コードが正しくありません");
     }
   };
 
@@ -105,7 +105,7 @@ export default function LoginContent() {
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-2 text-center">
-                  デモ用コード: <span className="text-gold">1234</span> / 管理者: <span className="text-red-400">9999</span>
+                  SMSで送信された4桁のコードを入力してください
                 </p>
               </div>
               {error && <p className="text-red-400 text-sm">{error}</p>}
