@@ -4,15 +4,15 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { oracles, getOracleById } from "@/lib/oracles";
 import {
-  canSendMessage, getRemainingMessages, incrementDailyUsage,
-  createSession, addMessage, getSessions, ChatSession, ChatMessage,
-  deleteSession,
+  getSessionsFromDB, createSessionInDB, addMessageToDB,
+  deleteSessionFromDB, canSendMessageDB, incrementDailyUsageInDB,
+  ChatSession, ChatMessage,
 } from "@/lib/chatStorage";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Send, Menu, X, LogOut, Crown, Sparkles, Trash2, Plus,
   Clock, Heart, Calculator, Lightbulb, Moon, Shield, Star,
-  Hand, Droplet, Cat, Brain, MessageSquare, Settings,
+  Hand, Droplet, Cat, Brain, MessageSquare, Settings, Loader2,
 } from "lucide-react";
 
 const iconMap: Record<string, any> = {
@@ -22,7 +22,7 @@ const iconMap: Record<string, any> = {
 export default function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, isAuthenticated, loading: authLoading, logout, isPremiumActive } = useAuth();
+  const { user, profile, isAuthenticated, loading: authLoading, signOut, isPremiumActive, refreshProfile } = useAuth();
   const [selectedOracle, setSelectedOracle] = useState(oracles[0]);
   const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -30,6 +30,7 @@ export default function DashboardContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -52,9 +53,18 @@ export default function DashboardContent() {
     }
   }, [authLoading, isAuthenticated, router]);
 
+  // Load sessions from DB
   useEffect(() => {
-    setSessions(getSessions());
-  }, []);
+    async function loadSessions() {
+      if (user) {
+        setSessionsLoading(true);
+        const dbSessions = await getSessionsFromDB(user.id);
+        setSessions(dbSessions);
+        setSessionsLoading(false);
+      }
+    }
+    loadSessions();
+  }, [user]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -82,10 +92,10 @@ export default function DashboardContent() {
     setMessages([]);
   }, []);
 
-  const handleDeleteSession = useCallback((sessionId: string, e: React.MouseEvent) => {
+  const handleDeleteSession = useCallback(async (sessionId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    deleteSession(sessionId);
-    setSessions(getSessions());
+    await deleteSessionFromDB(sessionId);
+    setSessions(prev => prev.filter(s => s.id !== sessionId));
     if (currentSession?.id === sessionId) {
       setCurrentSession(null);
       setMessages([]);
@@ -93,8 +103,18 @@ export default function DashboardContent() {
   }, [currentSession]);
 
   const sendMessage = async () => {
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || !user) return;
 
+    // Check rate limits
+    const canSend = await canSendMessageDB(
+      user.id,
+      isPremiumActive,
+      profile?.free_messages_remaining ?? 0
+    );
+    if (!canSend.allowed) {
+      alert(canSend.reason);
+      return;
+    }
 
     const userMessage = input.trim();
     setInput("");
@@ -102,13 +122,22 @@ export default function DashboardContent() {
 
     let session = currentSession;
     if (!session) {
-      session = createSession(selectedOracle.id, userMessage.substring(0, 50));
+      const newSession = await createSessionInDB(user.id, selectedOracle.id, userMessage.substring(0, 50));
+      if (!newSession) {
+        setIsLoading(false);
+        return;
+      }
+      session = newSession;
       setCurrentSession(session);
     }
 
-    const userMsg = addMessage(session.id, "user", userMessage, selectedOracle.id);
-    setMessages(prev => [...prev, userMsg]);
-    incrementDailyUsage();
+    const userMsg = await addMessageToDB(session.id, user.id, selectedOracle.id, "user", userMessage);
+    if (userMsg) {
+      setMessages(prev => [...prev, userMsg]);
+    }
+
+    // Increment daily usage
+    await incrementDailyUsageInDB(user.id);
 
     try {
       const conversationHistory = messages.slice(-10).map(m => ({
@@ -129,18 +158,30 @@ export default function DashboardContent() {
       const data = await response.json();
       if (data.error) throw new Error(data.error);
 
-      const assistantMsg = addMessage(session.id, "assistant", data.message, selectedOracle.id);
-      setMessages(prev => [...prev, assistantMsg]);
+      const assistantMsg = await addMessageToDB(session.id, user.id, selectedOracle.id, "assistant", data.message);
+      if (assistantMsg) {
+        setMessages(prev => [...prev, assistantMsg]);
+      }
+
+      // Decrement free messages for non-premium users
+      if (!isPremiumActive && profile) {
+        await refreshProfile();
+      }
     } catch {
-      const errorMsg = addMessage(
-        session.id, "assistant",
-        "申し訳ございません。星々の導きが一時的に途絶えてしまいました... しばらくしてからもう一度お試しください。",
-        selectedOracle.id
+      const errorMsg = await addMessageToDB(
+        session.id, user.id, selectedOracle.id, "assistant",
+        "申し訳ございません。星々の導きが一時的に途絶えてしまいました... しばらくしてからもう一度お試しください。"
       );
-      setMessages(prev => [...prev, errorMsg]);
+      if (errorMsg) {
+        setMessages(prev => [...prev, errorMsg]);
+      }
     } finally {
       setIsLoading(false);
-      setSessions(getSessions());
+      // Refresh sessions list
+      if (user) {
+        const dbSessions = await getSessionsFromDB(user.id);
+        setSessions(dbSessions);
+      }
     }
   };
 
@@ -150,8 +191,6 @@ export default function DashboardContent() {
       sendMessage();
     }
   };
-
-  const OracleIcon = iconMap[selectedOracle.icon];
 
   if (authLoading) {
     return (
@@ -193,7 +232,6 @@ export default function DashboardContent() {
                 <p className="text-xs text-gray-500 uppercase tracking-wider mb-2 px-2">占い師を選ぶ</p>
                 <div className="grid grid-cols-4 gap-2">
                   {oracles.map(oracle => {
-                    const Icon = iconMap[oracle.icon];
                     const isSelected = selectedOracle.id === oracle.id;
                     return (
                       <button
@@ -225,26 +263,32 @@ export default function DashboardContent() {
                     <Plus className="w-4 h-4" />
                   </button>
                 </div>
-                <div className="space-y-1">
-                  {sessions.filter(s => s.oracleId === selectedOracle.id).slice(0, 20).map(session => (
-                    <button
-                      key={session.id}
-                      onClick={() => loadSession(session)}
-                      className={`w-full text-left p-2 rounded-lg text-sm flex items-center gap-2 group transition-all ${
-                        currentSession?.id === session.id ? "bg-gold/10 text-gold" : "text-gray-400 hover:bg-white/5"
-                      }`}
-                    >
-                      <MessageSquare className="w-3.5 h-3.5 flex-shrink-0" />
-                      <span className="truncate flex-1">{session.title}</span>
+                {sessionsLoading ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="w-4 h-4 animate-spin text-gray-500" />
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {sessions.filter(s => s.oracleId === selectedOracle.id).slice(0, 20).map(session => (
                       <button
-                        onClick={(e) => handleDeleteSession(session.id, e)}
-                        className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition-all"
+                        key={session.id}
+                        onClick={() => loadSession(session)}
+                        className={`w-full text-left p-2 rounded-lg text-sm flex items-center gap-2 group transition-all ${
+                          currentSession?.id === session.id ? "bg-gold/10 text-gold" : "text-gray-400 hover:bg-white/5"
+                        }`}
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <MessageSquare className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span className="truncate flex-1">{session.title}</span>
+                        <button
+                          onClick={(e) => handleDeleteSession(session.id, e)}
+                          className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition-all"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </button>
-                    </button>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* User Info */}
@@ -252,21 +296,25 @@ export default function DashboardContent() {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-xs font-bold text-white">
-                      {user?.phone?.slice(-2) || "??"}
+                      {profile?.nickname?.charAt(0) || user?.email?.charAt(0)?.toUpperCase() || "?"}
                     </div>
                     <div>
-                      <p className="text-sm text-gray-300">{user?.phone || "ゲスト"}</p>
+                      <p className="text-sm text-gray-300 truncate max-w-[140px]">
+                        {profile?.nickname || user?.email || "ゲスト"}
+                      </p>
                       <p className="text-xs text-gray-500">
-                        {user?.isPremium ? (
+                        {isPremiumActive ? (
                           <span className="text-gold flex items-center gap-1">
                             <Crown className="w-3 h-3" /> プレミアム
                           </span>
-                        ) : "月額プラン"}
+                        ) : (
+                          <span>無料プラン（残り{profile?.free_messages_remaining ?? 5}回）</span>
+                        )}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {user?.isAdmin && (
+                    {profile?.is_admin && (
                       <button
                         onClick={() => { router.push("/admin"); setSidebarOpen(false); }}
                         className="text-red-400 hover:text-red-300 transition-colors"
@@ -275,14 +323,14 @@ export default function DashboardContent() {
                         <Settings className="w-4 h-4" />
                       </button>
                     )}
-                    <button onClick={logout} className="text-gray-500 hover:text-red-400 transition-colors">
+                    <button onClick={signOut} className="text-gray-500 hover:text-red-400 transition-colors">
                       <LogOut className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
-                {!user?.isPremium && (
+                {!isPremiumActive && (
                   <button
-                    onClick={() => router.push("/login")}
+                    onClick={() => router.push("/pricing")}
                     className="block w-full text-center py-2 rounded-lg bg-gradient-to-r from-amber-500 to-yellow-500 text-black text-sm font-semibold hover:from-amber-600 hover:to-yellow-600 transition-all"
                   >
                     <Crown className="w-4 h-4 inline mr-1" />
@@ -314,7 +362,7 @@ export default function DashboardContent() {
             {isPremiumActive ? (
               <><Crown className="w-3.5 h-3.5 text-amber-400" /><span className="text-amber-400">プレミアム</span></>
             ) : (
-              <><MessageSquare className="w-3.5 h-3.5" /><span>未登録</span></>
+              <><MessageSquare className="w-3.5 h-3.5" /><span>残り{profile?.free_messages_remaining ?? 5}回</span></>
             )}
           </div>
         </header>
@@ -390,43 +438,38 @@ export default function DashboardContent() {
 
         {/* Input */}
         <div className="border-t border-gray-800 bg-mystic-card/80 backdrop-blur-sm p-4">
-          {isPremiumActive ? (
-            <div className="flex items-end gap-2 max-w-3xl mx-auto">
-              <textarea
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={selectedOracle.placeholder}
-                rows={1}
-                className="flex-1 bg-mystic-bg border border-gray-700 rounded-xl py-3 px-4 text-gray-200 placeholder:text-gray-600 resize-none focus:outline-none focus:border-gold/50 transition-colors min-h-[48px] max-h-[120px]"
-                style={{ height: "auto" }}
-                onInput={(e) => {
-                  const target = e.target as HTMLTextAreaElement;
-                  target.style.height = "auto";
-                  target.style.height = Math.min(target.scrollHeight, 120) + "px";
-                }}
-              />
-              <button
-                onClick={sendMessage}
-                disabled={!input.trim() || isLoading}
-                className="btn-primary p-3 rounded-xl disabled:opacity-30 disabled:transform-none flex-shrink-0"
-              >
-                <Send className="w-5 h-5" />
-              </button>
-            </div>
-          ) : (
-            <div className="max-w-3xl mx-auto text-center py-2">
-              <div className="bg-gradient-to-r from-amber-500/10 to-yellow-500/10 border border-amber-500/30 rounded-xl p-4">
-                <Crown className="w-6 h-6 text-amber-400 mx-auto mb-2" />
-                <p className="text-sm text-amber-200 mb-3">鑑定機能をご利用いただくには、プレミアムプランへの登録が必要です</p>
-                <button
-                  onClick={() => router.push("/login")}
-                  className="px-6 py-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-yellow-500 text-black text-sm font-semibold hover:from-amber-600 hover:to-yellow-600 transition-all"
-                >
-                  プレミアムに登録（¥1,980/月）
+          <div className="flex items-end gap-2 max-w-3xl mx-auto">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={selectedOracle.placeholder}
+              rows={1}
+              className="flex-1 bg-mystic-bg border border-gray-700 rounded-xl py-3 px-4 text-gray-200 placeholder:text-gray-600 resize-none focus:outline-none focus:border-gold/50 transition-colors min-h-[48px] max-h-[120px]"
+              style={{ height: "auto" }}
+              onInput={(e) => {
+                const target = e.target as HTMLTextAreaElement;
+                target.style.height = "auto";
+                target.style.height = Math.min(target.scrollHeight, 120) + "px";
+              }}
+            />
+            <button
+              onClick={sendMessage}
+              disabled={!input.trim() || isLoading}
+              className="btn-primary p-3 rounded-xl disabled:opacity-30 disabled:transform-none flex-shrink-0"
+            >
+              <Send className="w-5 h-5" />
+            </button>
+          </div>
+          {!isPremiumActive && (
+            <div className="max-w-3xl mx-auto mt-2 text-center">
+              <p className="text-xs text-gray-500">
+                無料プラン：残り{profile?.free_messages_remaining ?? 5}回 |{" "}
+                <button onClick={() => router.push("/pricing")} className="text-amber-400 hover:text-amber-300">
+                  プレミアムにアップグレード
                 </button>
-              </div>
+              </p>
             </div>
           )}
         </div>

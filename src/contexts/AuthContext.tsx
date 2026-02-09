@@ -1,242 +1,218 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { getSupabaseClient } from "@/lib/supabase";
+import type { User as SupabaseUser, Session } from "@supabase/supabase-js";
 
-interface User {
-  phone: string;
-  isPremium: boolean;
-  isAdmin: boolean;
-  nickname?: string;
-  createdAt: number;
-  premiumExpiry?: number; // Unix timestamp when premium expires
-  premiumGrantedBy?: string; // "bank_transfer" | "admin" | "activation_code" | undefined
+export interface UserProfile {
+  id: string;
+  email: string | null;
+  nickname: string | null;
+  phone: string | null;
+  avatar_url: string | null;
+  zodiac_sign: string | null;
+  birthdate: string | null;
+  blood_type: string | null;
+  memo: string | null;
+  is_premium: boolean;
+  is_admin: boolean;
+  premium_expires_at: string | null;
+  premium_granted_by: string | null;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  total_messages_sent: number;
+  free_messages_remaining: number;
+  referral_code: string | null;
+  language: string;
+  created_at: string;
 }
 
 interface AuthContextType {
-  user: User | null;
+  user: SupabaseUser | null;
+  profile: UserProfile | null;
+  session: Session | null;
   isAuthenticated: boolean;
   loading: boolean;
-  login: (phone: string, code: string) => boolean;
-  logout: () => void;
-  upgradeToPremium: () => void;
-  grantPremium: (phone: string, durationDays: number) => void;
-  revokePremium: (phone: string) => void;
-  getAllUsers: () => User[];
   isPremiumActive: boolean;
+  signUp: (email: string, password: string) => Promise<{ error: string | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
+  updateProfile: (updates: Partial<UserProfile>) => Promise<{ error: string | null }>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
+  profile: null,
+  session: null,
   isAuthenticated: false,
   loading: true,
-  login: () => false,
-  logout: () => {},
-  upgradeToPremium: () => {},
-  grantPremium: () => {},
-  revokePremium: () => {},
-  getAllUsers: () => [],
   isPremiumActive: false,
+  signUp: async () => ({ error: null }),
+  signIn: async () => ({ error: null }),
+  signOut: async () => {},
+  refreshProfile: async () => {},
+  updateProfile: async () => ({ error: null }),
 });
 
-const DEMO_CODE = "1234";
-const ADMIN_CODE = "9999";
-const STORAGE_KEY = "sixoracle_user";
-const ALL_USERS_KEY = "sixoracle_all_users";
-
-// Admin phone numbers (can be extended)
-const ADMIN_PHONES = ["090-0000-0000", "admin"];
-
-// Helper: check if premium is still active
-function checkPremiumActive(user: User | null): boolean {
-  if (!user) return false;
-  if (user.isAdmin) return true; // Admins always have access
-  if (!user.isPremium) return false;
-  if (user.premiumExpiry && Date.now() > user.premiumExpiry) return false; // Expired
+function checkPremiumActive(profile: UserProfile | null): boolean {
+  if (!profile) return false;
+  if (profile.is_admin) return true;
+  if (!profile.is_premium) return false;
+  if (profile.premium_expires_at && new Date(profile.premium_expires_at) < new Date()) return false;
   return true;
 }
 
-// Helper: save user to all_users registry
-function saveToRegistry(user: User) {
-  try {
-    const stored = localStorage.getItem(ALL_USERS_KEY);
-    const users: User[] = stored ? JSON.parse(stored) : [];
-    const idx = users.findIndex(u => u.phone === user.phone);
-    if (idx >= 0) {
-      users[idx] = user;
-    } else {
-      users.push(user);
-    }
-    localStorage.setItem(ALL_USERS_KEY, JSON.stringify(users));
-  } catch {}
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const supabase = getSupabaseClient();
+
+  const fetchProfile = useCallback(async (userId: string) => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        // Ensure isAdmin field exists for backwards compatibility
-        if (parsed.isAdmin === undefined) {
-          parsed.isAdmin = ADMIN_PHONES.includes(parsed.phone);
-        }
-        // Check if premium has expired
-        if (parsed.isPremium && parsed.premiumExpiry && Date.now() > parsed.premiumExpiry) {
-          parsed.isPremium = false;
-          parsed.premiumExpiry = undefined;
-          parsed.premiumGrantedBy = undefined;
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
-          saveToRegistry(parsed);
-        }
-        setUser(parsed);
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .single();
+
+      if (error) {
+        console.error("Error fetching profile:", error);
+        return null;
       }
-    } catch {}
-    setLoading(false);
-  }, []);
-
-  const saveUser = useCallback((u: User) => {
-    setUser(u);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(u));
-    saveToRegistry(u);
-  }, []);
-
-  const login = useCallback((phone: string, code: string): boolean => {
-    // Admin login with special code
-    if (code === ADMIN_CODE) {
-      const adminUser: User = {
-        phone,
-        isPremium: true,
-        isAdmin: true,
-        createdAt: Date.now(),
-      };
-      saveUser(adminUser);
-      return true;
+      return data as UserProfile;
+    } catch (err) {
+      console.error("Error fetching profile:", err);
+      return null;
     }
+  }, [supabase]);
 
-    if (code !== DEMO_CODE) return false;
-
-    const isAdmin = ADMIN_PHONES.includes(phone);
-    const newUser: User = {
-      phone,
-      isPremium: isAdmin,
-      isAdmin,
-      createdAt: Date.now(),
-    };
-    // Check if existing user
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const existing = JSON.parse(stored);
-        if (existing.phone === phone) {
-          newUser.isPremium = existing.isPremium || isAdmin;
-          newUser.nickname = existing.nickname;
-          newUser.createdAt = existing.createdAt;
-          newUser.isAdmin = existing.isAdmin || isAdmin;
-          newUser.premiumExpiry = existing.premiumExpiry;
-          newUser.premiumGrantedBy = existing.premiumGrantedBy;
-          // Check if expired
-          if (newUser.premiumExpiry && Date.now() > newUser.premiumExpiry) {
-            newUser.isPremium = isAdmin;
-            newUser.premiumExpiry = undefined;
-            newUser.premiumGrantedBy = undefined;
-          }
-        }
-      }
-    } catch {}
-    saveUser(newUser);
-    return true;
-  }, [saveUser]);
-
-  const logout = useCallback(() => {
-    setUser(null);
-    localStorage.removeItem(STORAGE_KEY);
-  }, []);
-
-  const upgradeToPremium = useCallback(() => {
+  const refreshProfile = useCallback(async () => {
     if (user) {
-      saveUser({
-        ...user,
-        isPremium: true,
-        premiumGrantedBy: "bank_transfer",
+      const p = await fetchProfile(user.id);
+      if (p) setProfile(p);
+    }
+  }, [user, fetchProfile]);
+
+  // Initialize auth state
+  useEffect(() => {
+    let mounted = true;
+
+    async function initAuth() {
+      try {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        
+        if (mounted && currentSession) {
+          setSession(currentSession);
+          setUser(currentSession.user);
+          const p = await fetchProfile(currentSession.user.id);
+          if (mounted && p) setProfile(p);
+        }
+      } catch (err) {
+        console.error("Auth init error:", err);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+
+    initAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, newSession) => {
+        if (!mounted) return;
+
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
+
+        if (newSession?.user) {
+          const p = await fetchProfile(newSession.user.id);
+          if (mounted) setProfile(p);
+        } else {
+          setProfile(null);
+        }
+
+        if (event === "SIGNED_OUT") {
+          setProfile(null);
+        }
+      }
+    );
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [supabase, fetchProfile]);
+
+  const signUp = useCallback(async (email: string, password: string) => {
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`,
+        },
       });
+      if (error) return { error: error.message };
+      return { error: null };
+    } catch (err: any) {
+      return { error: err.message || "登録に失敗しました" };
     }
-  }, [user, saveUser]);
+  }, [supabase]);
 
-  // Admin: grant premium to a user for N days
-  const grantPremium = useCallback((phone: string, durationDays: number) => {
+  const signIn = useCallback(async (email: string, password: string) => {
     try {
-      const stored = localStorage.getItem(ALL_USERS_KEY);
-      const users: User[] = stored ? JSON.parse(stored) : [];
-      const idx = users.findIndex(u => u.phone === phone);
-      if (idx >= 0) {
-        users[idx].isPremium = true;
-        users[idx].premiumExpiry = Date.now() + durationDays * 24 * 60 * 60 * 1000;
-        users[idx].premiumGrantedBy = "admin";
-        localStorage.setItem(ALL_USERS_KEY, JSON.stringify(users));
-        // If this is the current user, update state too
-        if (user && user.phone === phone) {
-          saveUser({
-            ...user,
-            isPremium: true,
-            premiumExpiry: users[idx].premiumExpiry,
-            premiumGrantedBy: "admin",
-          });
-        }
-      }
-    } catch {}
-  }, [user, saveUser]);
-
-  // Admin: revoke premium from a user
-  const revokePremium = useCallback((phone: string) => {
-    try {
-      const stored = localStorage.getItem(ALL_USERS_KEY);
-      const users: User[] = stored ? JSON.parse(stored) : [];
-      const idx = users.findIndex(u => u.phone === phone);
-      if (idx >= 0) {
-        users[idx].isPremium = false;
-        users[idx].premiumExpiry = undefined;
-        users[idx].premiumGrantedBy = undefined;
-        localStorage.setItem(ALL_USERS_KEY, JSON.stringify(users));
-        // If this is the current user, update state too
-        if (user && user.phone === phone) {
-          saveUser({
-            ...user,
-            isPremium: false,
-            premiumExpiry: undefined,
-            premiumGrantedBy: undefined,
-          });
-        }
-      }
-    } catch {}
-  }, [user, saveUser]);
-
-  // Get all registered users
-  const getAllUsers = useCallback((): User[] => {
-    try {
-      const stored = localStorage.getItem(ALL_USERS_KEY);
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) return { error: error.message };
+      return { error: null };
+    } catch (err: any) {
+      return { error: err.message || "ログインに失敗しました" };
     }
-  }, []);
+  }, [supabase]);
 
-  const isPremiumActive = checkPremiumActive(user);
+  const signOut = useCallback(async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setProfile(null);
+    setSession(null);
+  }, [supabase]);
+
+  const updateProfile = useCallback(async (updates: Partial<UserProfile>) => {
+    if (!user) return { error: "Not authenticated" };
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update(updates)
+        .eq("id", user.id);
+      if (error) return { error: error.message };
+      await refreshProfile();
+      return { error: null };
+    } catch (err: any) {
+      return { error: err.message };
+    }
+  }, [user, supabase, refreshProfile]);
+
+  const isPremiumActive = checkPremiumActive(profile);
 
   return (
     <AuthContext.Provider value={{
       user,
+      profile,
+      session,
       isAuthenticated: !!user,
       loading,
-      login,
-      logout,
-      upgradeToPremium,
-      grantPremium,
-      revokePremium,
-      getAllUsers,
       isPremiumActive,
+      signUp,
+      signIn,
+      signOut,
+      refreshProfile,
+      updateProfile,
     }}>
       {children}
     </AuthContext.Provider>

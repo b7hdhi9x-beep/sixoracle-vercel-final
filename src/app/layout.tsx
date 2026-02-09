@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { ClientProviders } from "@/components/ClientProviders";
 import "./globals.css";
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: "六神ノ間 - Six Oracle",
   description: "11人以上のAI占い師が、あなたの運命を星々から読み解く。時を超えた叡智と最新の技術が交わる、あなただけの聖域。",

@@ -5,15 +5,19 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { StarField } from "@/components/StarField";
 import { motion } from "framer-motion";
-import { Sparkles, Phone, Lock, ArrowRight, ArrowLeft } from "lucide-react";
+import { Sparkles, Mail, Lock, ArrowLeft, Eye, EyeOff, Loader2, Moon } from "lucide-react";
 
 export default function LoginContent() {
   const router = useRouter();
-  const { login, isAuthenticated, loading } = useAuth();
-  const [step, setStep] = useState<"phone" | "code">("phone");
-  const [phone, setPhone] = useState("");
-  const [code, setCode] = useState("");
+  const { signIn, signUp, isAuthenticated, loading } = useAuth();
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (!loading && isAuthenticated) {
@@ -21,24 +25,56 @@ export default function LoginContent() {
     }
   }, [loading, isAuthenticated, router]);
 
-  const handlePhoneSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!phone.trim()) {
-      setError("電話番号を入力してください");
+    setError("");
+    setSuccess("");
+    setIsLoading(true);
+
+    if (!email || !password) {
+      setError("メールアドレスとパスワードを入力してください");
+      setIsLoading(false);
       return;
     }
-    setError("");
-    setStep("code");
-  };
 
-  const handleCodeSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const success = login(phone, code);
-    if (success) {
-      router.push("/dashboard");
+    if (mode === "register") {
+      if (password !== confirmPassword) {
+        setError("パスワードが一致しません");
+        setIsLoading(false);
+        return;
+      }
+      if (password.length < 6) {
+        setError("パスワードは6文字以上で入力してください");
+        setIsLoading(false);
+        return;
+      }
+
+      const { error: signUpError } = await signUp(email, password);
+      if (signUpError) {
+        if (signUpError.includes("already registered")) {
+          setError("このメールアドレスは既に登録されています");
+        } else {
+          setError(signUpError);
+        }
+      } else {
+        setSuccess("確認メールを送信しました。メールを確認してアカウントを有効化してください。");
+      }
     } else {
-      setError("認証コードが正しくありません");
+      const { error: signInError } = await signIn(email, password);
+      if (signInError) {
+        if (signInError.includes("Invalid login")) {
+          setError("メールアドレスまたはパスワードが正しくありません");
+        } else if (signInError.includes("Email not confirmed")) {
+          setError("メールアドレスの確認が完了していません。確認メールをご確認ください。");
+        } else {
+          setError(signInError);
+        }
+      } else {
+        router.push("/dashboard");
+      }
     }
+
+    setIsLoading(false);
   };
 
   return (
@@ -49,72 +85,134 @@ export default function LoginContent() {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md relative z-10"
       >
+        {/* Back button */}
+        <button
+          onClick={() => router.push("/")}
+          className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-6"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span className="text-sm">トップに戻る</span>
+        </button>
+
         <div className="text-center mb-8">
-          <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-gold to-gold-dark flex items-center justify-center shadow-2xl mb-4">
-            <Sparkles className="w-10 h-10 text-mystic-bg" />
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <Moon className="w-8 h-8 text-amber-400" />
+            <span className="text-2xl font-serif font-bold gradient-text">六神ノ間</span>
           </div>
-          <h1 className="text-3xl font-serif gradient-text mb-2">六神ノ間</h1>
-          <p className="text-gray-400 text-sm">運命の扉を開くために、まずはログインしてください</p>
+          <h1 className="text-xl font-bold text-white mb-2">
+            {mode === "login" ? "ログイン" : "新規登録"}
+          </h1>
+          <p className="text-gray-400 text-sm">
+            {mode === "login"
+              ? "メールアドレスとパスワードでログイン"
+              : "アカウントを作成して占いを始めましょう"}
+          </p>
         </div>
 
         <div className="glass-card rounded-2xl p-8">
-          {step === "phone" ? (
-            <form onSubmit={handlePhoneSubmit} className="space-y-6">
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">電話番号</label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="090-1234-5678"
-                    className="w-full bg-mystic-bg border border-gray-700 rounded-xl py-3 pl-11 pr-4 text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-gold/50 transition-colors"
-                    autoFocus
-                  />
-                </div>
+          {/* Error/Success Messages */}
+          {error && (
+            <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+              {error}
+            </div>
+          )}
+          {success && (
+            <div className="mb-4 p-3 rounded-lg bg-green-500/10 border border-green-500/30 text-green-400 text-sm">
+              {success}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Email */}
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">メールアドレス</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  className="w-full bg-mystic-bg border border-gray-700 rounded-xl py-3 pl-11 pr-4 text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-gold/50 transition-colors"
+                  autoComplete="email"
+                  autoFocus
+                />
               </div>
-              {error && <p className="text-red-400 text-sm">{error}</p>}
-              <button type="submit" className="w-full btn-primary py-3 rounded-xl flex items-center justify-center gap-2">
-                認証コードを送信
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={handleCodeSubmit} className="space-y-6">
-              <button
-                type="button"
-                onClick={() => { setStep("phone"); setError(""); }}
-                className="text-gray-400 hover:text-gold transition-colors flex items-center gap-1 text-sm"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                電話番号を変更
-              </button>
+            </div>
+
+            {/* Password */}
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">パスワード</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="6文字以上"
+                  className="w-full bg-mystic-bg border border-gray-700 rounded-xl py-3 pl-11 pr-12 text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-gold/50 transition-colors"
+                  autoComplete={mode === "login" ? "current-password" : "new-password"}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Confirm Password (Register only) */}
+            {mode === "register" && (
               <div>
-                <label className="block text-sm text-gray-400 mb-2">認証コード</label>
+                <label className="block text-sm text-gray-400 mb-2">パスワード（確認）</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
                   <input
-                    type="text"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value)}
-                    placeholder="4桁のコード"
-                    maxLength={4}
-                    className="w-full bg-mystic-bg border border-gray-700 rounded-xl py-3 pl-11 pr-4 text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-gold/50 transition-colors text-center text-2xl tracking-[0.5em]"
-                    autoFocus
+                    type={showPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="もう一度入力"
+                    className="w-full bg-mystic-bg border border-gray-700 rounded-xl py-3 pl-11 pr-4 text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-gold/50 transition-colors"
+                    autoComplete="new-password"
                   />
                 </div>
-                <p className="text-xs text-gray-500 mt-2 text-center">
-                  SMSで送信された4桁のコードを入力してください
-                </p>
               </div>
-              {error && <p className="text-red-400 text-sm">{error}</p>}
-              <button type="submit" className="w-full btn-primary py-3 rounded-xl flex items-center justify-center gap-2">
-                ログイン
-                <Sparkles className="w-4 h-4" />
-              </button>
-            </form>
-          )}
+            )}
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full btn-primary py-3 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  {mode === "login" ? "ログイン" : "アカウント作成"}
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Toggle Mode */}
+          <div className="mt-6 text-center">
+            <button
+              onClick={() => {
+                setMode(mode === "login" ? "register" : "login");
+                setError("");
+                setSuccess("");
+              }}
+              className="text-sm text-gold hover:text-gold-light transition-colors"
+            >
+              {mode === "login"
+                ? "アカウントをお持ちでない方はこちら →"
+                : "← すでにアカウントをお持ちの方はこちら"}
+            </button>
+          </div>
         </div>
 
         <p className="text-center text-xs text-gray-600 mt-6">

@@ -23,7 +23,7 @@ export default function HomePage() {
   const faqs = [
     { q: "新しく占い師を追加しました！", a: "六神ノ間は創設時の6人の占い師から始まりました。「六神」の名はこの創設メンバーに由来しており、屋号は変わりません。その後、新たに5人の占い師が加わりました：紫苑（手相）、星蘭（西洋占星術）、緋月（血液型）、獣牙（動物占い）、心理（MBTI）。現在は11人体制で、今後も新しい占い師を追加していきますが、「六神ノ間」の屋号はそのままです。" },
     { q: "AI占いとは何ですか？", a: "最新のAI技術を活用した占いサービスです。11人の個性豊かなAI占い師が、あなたの悩みに24時間いつでも寄り添い、的確なアドバイスを提供します。" },
-    { q: "料金はいくらですか？", a: "月額¥1,980（税込）で、全11人のAI占い師に鑑定回数無制限でご相談いただけます。一般的な占いサービスでは1回3,000〜10,000円ですので、非常にお得です。" },
+    { q: "料金はいくらですか？", a: "月額¥2,900（税込）で、全11人のAI占い師に1日100回までご相談いただけます。無料プランでは累計5回まで無料でお試しいただけます。" },
     { q: "どの占い師に相談すればいいですか？", a: "お悩みの内容に合わせてお選びください。恋愛なら玲蘭、タイミングなら蒼真、性格分析なら朔夜、MBTI診断なら心理など、それぞれ専門分野があります。" },
     { q: "解約はいつでもできますか？", a: "はい、いつでも解約可能です。解約後も期間内はサービスをご利用いただけます。" },
     { q: "占いの精度はどのくらいですか？", a: "最新のAI技術を活用し、各占い師が専門的な知識に基づいてアドバイスを行います。エンターテインメントとしてお楽しみいただきつつ、実用的なアドバイスも含まれています。" },
@@ -236,14 +236,14 @@ export default function HomePage() {
                       月額プラン
                     </span>
                     <div className="flex items-baseline justify-center gap-2 mb-2">
-                      <span className="text-5xl font-bold gradient-text">¥1,980</span>
+                      <span className="text-5xl font-bold gradient-text">¥2,900</span>
                       <span className="text-sm text-gray-400">/ 月 (税込)</span>
                     </div>
-                    <p className="text-sm text-gray-400">11人のAI占い師に、いつでも何度でも相談可能</p>
+                    <p className="text-sm text-gray-400">11人のAI占い師に、1日100回まで相談可能</p>
                   </div>
                   <div className="space-y-3 mb-8 text-sm">
                     {[
-                      "鑑定回数無制限",
+                      "1日100回まで鑑定可能",
                       "全11人の占い師に相談可能",
                       "24時間いつでも利用可能",
                       "鑑定履歴の保存",
@@ -256,14 +256,14 @@ export default function HomePage() {
                     ))}
                   </div>
                   <button
-                    onClick={() => router.push(isAuthenticated ? "/dashboard" : "/login")}
+                    onClick={() => router.push(isAuthenticated ? "/pricing" : "/login")}
                     className="w-full py-4 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-black font-semibold text-lg transition-all flex items-center justify-center gap-2"
                   >
-                    {isAuthenticated ? "鑑定を始める" : "今すぐ申し込む"}
+                    {isAuthenticated ? "プレミアムに登録" : "今すぐ申し込む"}
                     <ArrowRight className="w-5 h-5" />
                   </button>
                   <p className="text-center text-xs text-gray-500 mt-3">
-                    お支払い方法：銀行振込のみ
+                    お支払い方法：クレジットカード（Stripe決済）
                   </p>
                   <p className="text-center text-xs text-gray-500 mt-1">
                     ※ いつでも解約可能です
