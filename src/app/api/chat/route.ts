@@ -36,7 +36,7 @@ async function callGeminiWithRetry(body: any, maxRetries = 2): Promise<Response>
 }
 
 // Constants
-const FREE_MESSAGE_LIMIT = 5;
+const FREE_MESSAGE_LIMIT = 5; // 無料ユーザーの累計上限（リセットなし）
 // プレミアムユーザーは無制限
 
 export async function POST(request: NextRequest) {
@@ -68,25 +68,14 @@ export async function POST(request: NextRequest) {
         isPremium = profile.is_premium;
         freeRemaining = profile.free_messages_remaining ?? FREE_MESSAGE_LIMIT;
 
-        // Check daily reset
-        const today = new Date().toISOString().split("T")[0];
-        let dailyCount = profile.daily_messages_today || 0;
-
-        if (profile.daily_reset_date !== today) {
-          dailyCount = 0;
-          await supabase
-            .from("profiles")
-            .update({ daily_messages_today: 0, daily_reset_date: today })
-            .eq("id", userId);
-        }
-
         if (isPremium) {
-          // プレミアムユーザーは無制限 - 制限チェックなし
+          // プレミアムユーザーは完全無制限 - 制限チェックなし
         } else {
+          // 無料ユーザーは累計5回まで（日次リセットなし）
           if (freeRemaining <= 0) {
             return NextResponse.json(
               {
-                error: "無料鑑定の回数を使い切りました。プレミアムプランに登録すると、無制限で鑑定できます。",
+                error: "無料鑑定の回数（累計5回）を使い切りました。プレミアムプランに登録すると、無制限で鑑定できます。",
                 limitReached: true,
                 isPremium: false,
                 freeRemaining: 0,
@@ -192,41 +181,26 @@ export async function POST(request: NextRequest) {
 
     // Update usage counters and save to DB
     if (supabase && userId) {
-      const today = new Date().toISOString().split("T")[0];
+      const { data: currentProfile } = await supabase
+        .from("profiles")
+        .select("total_messages_sent, free_messages_remaining")
+        .eq("id", userId)
+        .single();
 
-      if (isPremium) {
-        const { data: currentProfile } = await supabase
-          .from("profiles")
-          .select("total_messages_sent, daily_messages_today")
-          .eq("id", userId)
-          .single();
+      if (currentProfile) {
+        const updateData: any = {
+          total_messages_sent: (currentProfile.total_messages_sent || 0) + 1,
+        };
 
-        if (currentProfile) {
-          await supabase
-            .from("profiles")
-            .update({
-              total_messages_sent: (currentProfile.total_messages_sent || 0) + 1,
-              daily_messages_today: (currentProfile.daily_messages_today || 0) + 1,
-              daily_reset_date: today,
-            })
-            .eq("id", userId);
+        // 無料ユーザーのみ累計残り回数を減らす（プレミアムは無制限なのでカウント不要）
+        if (!isPremium) {
+          updateData.free_messages_remaining = Math.max(0, (currentProfile.free_messages_remaining || 0) - 1);
         }
-      } else {
-        const { data: currentProfile } = await supabase
-          .from("profiles")
-          .select("free_messages_remaining, total_messages_sent")
-          .eq("id", userId)
-          .single();
 
-        if (currentProfile) {
-          await supabase
-            .from("profiles")
-            .update({
-              free_messages_remaining: Math.max(0, (currentProfile.free_messages_remaining || 0) - 1),
-              total_messages_sent: (currentProfile.total_messages_sent || 0) + 1,
-            })
-            .eq("id", userId);
-        }
+        await supabase
+          .from("profiles")
+          .update(updateData)
+          .eq("id", userId);
       }
 
       // Save messages to chat_messages table
