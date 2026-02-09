@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { oraclePrompts, dailySharingPrompts, detectConversationMode } from "@/lib/oraclePrompts";
+import { generateVariationPrompt } from "@/lib/responseVariation";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
@@ -39,7 +41,7 @@ const PREMIUM_DAILY_LIMIT = 100;
 
 export async function POST(request: NextRequest) {
   try {
-    const { messages, systemPrompt, userId, oracleId, sessionId } = await request.json();
+    const { messages, systemPrompt, userId, oracleId, sessionId, conversationHistory } = await request.json();
 
     if (!GEMINI_API_KEY) {
       return NextResponse.json(
@@ -52,24 +54,25 @@ export async function POST(request: NextRequest) {
     const supabase = getSupabaseAdmin();
     let isPremium = false;
     let freeRemaining = FREE_MESSAGE_LIMIT;
+    let userProfile: any = null;
 
     if (supabase && userId) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("is_premium, free_messages_remaining, total_messages_sent, daily_messages_today, daily_reset_date")
+        .select("is_premium, free_messages_remaining, total_messages_sent, daily_messages_today, daily_reset_date, display_name")
         .eq("id", userId)
         .single();
 
       if (profile) {
+        userProfile = profile;
         isPremium = profile.is_premium;
-        freeRemaining = profile.free_messages_remaining;
+        freeRemaining = profile.free_messages_remaining ?? FREE_MESSAGE_LIMIT;
 
-        // Check daily reset for premium users
+        // Check daily reset
         const today = new Date().toISOString().split("T")[0];
         let dailyCount = profile.daily_messages_today || 0;
 
         if (profile.daily_reset_date !== today) {
-          // Reset daily counter
           dailyCount = 0;
           await supabase
             .from("profiles")
@@ -78,7 +81,6 @@ export async function POST(request: NextRequest) {
         }
 
         if (isPremium) {
-          // Premium user: check daily limit
           if (dailyCount >= PREMIUM_DAILY_LIMIT) {
             return NextResponse.json(
               {
@@ -90,7 +92,6 @@ export async function POST(request: NextRequest) {
             );
           }
         } else {
-          // Free user: check lifetime limit
           if (freeRemaining <= 0) {
             return NextResponse.json(
               {
@@ -106,13 +107,51 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Detect conversation mode from the latest user message
+    const latestUserMessage = messages[messages.length - 1]?.content || "";
+    const conversationMode = detectConversationMode(latestUserMessage);
+
+    // Build enhanced system prompt
+    let enhancedSystemPrompt = systemPrompt || "";
+    
+    if (oracleId) {
+      // Use the detailed oracle prompt from oraclePrompts
+      const basePrompt = oraclePrompts[oracleId];
+      if (basePrompt) {
+        enhancedSystemPrompt = basePrompt;
+      }
+
+      // Add daily sharing mode prompt if applicable
+      if (conversationMode === "daily_sharing") {
+        const dailyPrompt = dailySharingPrompts[oracleId];
+        if (dailyPrompt) {
+          enhancedSystemPrompt += "\n\n" + dailyPrompt;
+        }
+      }
+
+      // Add response variation for diversity
+      const variationPrompt = generateVariationPrompt(oracleId);
+      enhancedSystemPrompt += variationPrompt;
+
+      // Add user context if available
+      if (userProfile?.display_name) {
+        enhancedSystemPrompt += `\n\n【相談者情報】相談者の名前は「${userProfile.display_name}」です。会話の中で自然に名前を呼んでください。`;
+      }
+    }
+
     // Build Gemini API request
     const contents: any[] = [];
     const systemInstruction = {
-      parts: [{ text: systemPrompt }],
+      parts: [{ text: enhancedSystemPrompt }],
     };
 
-    for (const msg of messages) {
+    // Include conversation history for context
+    const allMessages = conversationHistory ? [...conversationHistory, ...messages] : messages;
+    
+    // Limit to last 20 messages for context window
+    const recentMessages = allMessages.slice(-20);
+
+    for (const msg of recentMessages) {
       contents.push({
         role: msg.role === "assistant" ? "model" : "user",
         parts: [{ text: msg.content }],
@@ -123,7 +162,7 @@ export async function POST(request: NextRequest) {
       system_instruction: systemInstruction,
       contents,
       generationConfig: {
-        temperature: 0.9,
+        temperature: 0.92,
         topP: 0.95,
         topK: 40,
         maxOutputTokens: 2048,
@@ -160,24 +199,11 @@ export async function POST(request: NextRequest) {
       data.candidates?.[0]?.content?.parts?.[0]?.text ||
       "申し訳ございません。星々の導きが途絶えてしまいました...";
 
-    // Update usage counters after successful response
+    // Update usage counters and save to DB
     if (supabase && userId) {
       const today = new Date().toISOString().split("T")[0];
 
       if (isPremium) {
-        // Increment daily counter
-        await supabase.rpc("increment_daily_messages", { user_id_param: userId, today_param: today }).catch(() => {
-          // Fallback: direct update
-          supabase
-            .from("profiles")
-            .update({
-              total_messages_sent: (freeRemaining as any) + 1, // Will be overwritten
-              daily_messages_today: supabase ? 1 : 1,
-            })
-            .eq("id", userId);
-        });
-
-        // Simple fallback increment
         const { data: currentProfile } = await supabase
           .from("profiles")
           .select("total_messages_sent, daily_messages_today")
@@ -195,7 +221,6 @@ export async function POST(request: NextRequest) {
             .eq("id", userId);
         }
       } else {
-        // Decrement free messages
         const { data: currentProfile } = await supabase
           .from("profiles")
           .select("free_messages_remaining, total_messages_sent")
@@ -213,24 +238,139 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Save chat log
+      // Save messages to chat_messages table
       if (oracleId) {
-        const userMessage = messages[messages.length - 1]?.content || "";
+        let currentSessionId = sessionId;
+
+        // Create session if not exists
+        if (!currentSessionId) {
+          const { data: newSession } = await supabase
+            .from("chat_sessions")
+            .insert({
+              user_id: userId,
+              oracle_id: oracleId,
+              title: latestUserMessage.substring(0, 50) || "新しい会話",
+              message_count: 0,
+            })
+            .select("id")
+            .single();
+          
+          if (newSession) {
+            currentSessionId = newSession.id;
+          }
+        }
+
+        if (currentSessionId) {
+          // Save user message
+          await supabase
+            .from("chat_messages")
+            .insert({
+              session_id: currentSessionId,
+              user_id: userId,
+              oracle_id: oracleId,
+              role: "user",
+              content: latestUserMessage,
+              conversation_mode: conversationMode,
+            })
+            .catch((err: any) => console.error("Failed to save user message:", err));
+
+          // Save assistant message
+          await supabase
+            .from("chat_messages")
+            .insert({
+              session_id: currentSessionId,
+              user_id: userId,
+              oracle_id: oracleId,
+              role: "assistant",
+              content: text,
+              conversation_mode: conversationMode,
+            })
+            .catch((err: any) => console.error("Failed to save assistant message:", err));
+
+          // Update session message count and last_message_at
+          await supabase
+            .from("chat_sessions")
+            .update({
+              message_count: supabase.rpc ? undefined : 2, // Will be incremented
+              last_message_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", currentSessionId)
+            .catch(() => {});
+
+          // Increment message count
+          const { data: session } = await supabase
+            .from("chat_sessions")
+            .select("message_count")
+            .eq("id", currentSessionId)
+            .single();
+          
+          if (session) {
+            await supabase
+              .from("chat_sessions")
+              .update({ message_count: (session.message_count || 0) + 2 })
+              .eq("id", currentSessionId);
+          }
+        }
+
+        // Also save to chat_logs for backward compatibility
         await supabase
           .from("chat_logs")
           .insert({
             user_id: userId,
             oracle_id: oracleId,
-            session_id: sessionId || null,
-            user_message: userMessage,
+            session_id: currentSessionId || null,
+            user_message: latestUserMessage,
             assistant_message: text,
           })
           .catch((err: any) => console.error("Failed to save chat log:", err));
+
+        // Update intimacy level
+        await supabase
+          .from("intimacy_levels")
+          .upsert({
+            user_id: userId,
+            oracle_id: oracleId,
+            total_messages: 1,
+            experience: 10,
+            last_interaction_date: today,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: "user_id,oracle_id" })
+          .catch(() => {});
+        
+        // Increment intimacy
+        const { data: intimacy } = await supabase
+          .from("intimacy_levels")
+          .select("total_messages, experience, level")
+          .eq("user_id", userId)
+          .eq("oracle_id", oracleId)
+          .single();
+        
+        if (intimacy) {
+          const newExp = (intimacy.experience || 0) + 10;
+          const newLevel = Math.floor(newExp / 100) + 1;
+          await supabase
+            .from("intimacy_levels")
+            .update({
+              total_messages: (intimacy.total_messages || 0) + 1,
+              experience: newExp,
+              level: Math.min(newLevel, 99),
+              last_interaction_date: today,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("user_id", userId)
+            .eq("oracle_id", oracleId);
+        }
       }
     }
 
-    // Return remaining counts
-    const responseData: any = { message: text };
+    // Return response with metadata
+    const responseData: any = {
+      message: text,
+      conversationMode,
+      sessionId: sessionId || undefined,
+    };
+
     if (supabase && userId) {
       if (!isPremium) {
         responseData.freeRemaining = Math.max(0, freeRemaining - 1);
