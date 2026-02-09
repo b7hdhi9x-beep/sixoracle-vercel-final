@@ -343,6 +343,12 @@ export default function HomePage() {
             <Sparkles className="w-6 h-6 text-gold" />
             <span className="text-xl font-serif font-bold gradient-text">六神ノ間</span>
           </div>
+          <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-500 mb-4">
+            <a href="/faq" className="hover:text-gold transition-colors">よくある質問</a>
+            <a href="/help" className="hover:text-gold transition-colors">ヘルプガイド</a>
+            <a href="/contact" className="hover:text-gold transition-colors">お問い合わせ</a>
+            <a href="/feedback" className="hover:text-gold transition-colors">意見箱</a>
+          </div>
           <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-500 mb-6">
             <a href="/terms" className="hover:text-gold transition-colors">利用規約</a>
             <a href="/privacy" className="hover:text-gold transition-colors">プライバシーポリシー</a>
