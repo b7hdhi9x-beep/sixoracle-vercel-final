@@ -256,14 +256,14 @@ export default function HomePage() {
                     ))}
                   </div>
                   <button
-                    onClick={() => router.push(isAuthenticated ? "/pricing" : "/login")}
+                    onClick={() => router.push("/pricing")}
                     className="w-full py-4 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-black font-semibold text-lg transition-all flex items-center justify-center gap-2"
                   >
-                    {isAuthenticated ? "プレミアムに登録" : "今すぐ申し込む"}
+                    料金プランを見る
                     <ArrowRight className="w-5 h-5" />
                   </button>
                   <p className="text-center text-xs text-gray-500 mt-3">
-                    お支払い方法：クレジットカード（Stripe決済）
+                    オンライン決済は近日開始予定
                   </p>
                   <p className="text-center text-xs text-gray-500 mt-1">
                     ※ いつでも解約可能です

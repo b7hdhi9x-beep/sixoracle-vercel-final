@@ -6,8 +6,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import { StarField } from "@/components/StarField";
 import { motion } from "framer-motion";
 import {
-  Crown, Check, Star, Sparkles, ArrowLeft, Loader2, Moon,
+  Crown, Check, Star, Sparkles, ArrowLeft, Loader2, Moon, Clock,
 } from "lucide-react";
+
+// Stripe integration flag - set to true when Stripe is configured
+const STRIPE_ENABLED = !!(
+  typeof window === "undefined"
+    ? true // Server-side: check at runtime
+    : true // Client-side: always show UI, API will handle errors
+) && false; // ← Set to `true` when Stripe account is active
 
 export default function PricingContent() {
   const router = useRouter();
@@ -19,6 +26,11 @@ export default function PricingContent() {
   const handleSubscribe = async () => {
     if (!isAuthenticated) {
       router.push("/login");
+      return;
+    }
+
+    if (!STRIPE_ENABLED) {
+      alert("決済システムは現在準備中です。もうしばらくお待ちください。");
       return;
     }
 
@@ -49,6 +61,11 @@ export default function PricingContent() {
 
   const handleManageSubscription = async () => {
     if (!profile?.stripe_customer_id) return;
+
+    if (!STRIPE_ENABLED) {
+      alert("サブスクリプション管理は現在準備中です。");
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -104,6 +121,25 @@ export default function PricingContent() {
           </div>
         )}
 
+        {/* Coming Soon Notice */}
+        {!STRIPE_ENABLED && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 max-w-lg mx-auto"
+          >
+            <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Clock className="w-5 h-5 text-amber-400" />
+                <span className="text-amber-400 font-medium">決済システム準備中</span>
+              </div>
+              <p className="text-sm text-gray-400">
+                オンライン決済は近日中に開始予定です。もうしばらくお待ちください。
+              </p>
+            </div>
+          </motion.div>
+        )}
+
         {/* Pricing Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -156,7 +192,7 @@ export default function PricingContent() {
                     <Star className="w-5 h-5 text-green-400 mx-auto mb-2" />
                     <p className="text-green-400 font-medium">プレミアム会員です</p>
                   </div>
-                  {profile?.stripe_customer_id && (
+                  {profile?.stripe_customer_id && STRIPE_ENABLED && (
                     <button
                       onClick={handleManageSubscription}
                       disabled={isLoading}
@@ -169,22 +205,34 @@ export default function PricingContent() {
               ) : (
                 <button
                   onClick={handleSubscribe}
-                  disabled={isLoading}
-                  className="w-full py-4 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-black font-bold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-amber-500/20"
+                  disabled={isLoading || !STRIPE_ENABLED}
+                  className={`w-full py-4 font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg ${
+                    STRIPE_ENABLED
+                      ? "bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-black shadow-amber-500/20"
+                      : "bg-gray-700 text-gray-400 cursor-not-allowed shadow-none"
+                  }`}
                 >
                   {isLoading ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
+                  ) : STRIPE_ENABLED ? (
                     <>
                       <Sparkles className="w-5 h-5" />
                       今すぐプレミアムに登録
+                    </>
+                  ) : (
+                    <>
+                      <Clock className="w-5 h-5" />
+                      近日公開予定
                     </>
                   )}
                 </button>
               )}
 
               <p className="text-center text-xs text-gray-500 mt-4">
-                ※ いつでも解約可能です。Stripeによる安全な決済処理を使用しています。
+                {STRIPE_ENABLED
+                  ? "※ いつでも解約可能です。安全な決済処理を使用しています。"
+                  : "※ 決済開始時にお知らせいたします。"
+                }
               </p>
             </div>
           </div>

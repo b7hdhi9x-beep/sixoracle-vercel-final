@@ -1,23 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
-import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-01-27.acacia" as any,
-});
-
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
-
-// Use service role key for admin operations
 function getSupabaseAdmin() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
 }
 
 export async function POST(request: NextRequest) {
+  // Check if Stripe is configured
+  if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET) {
+    return NextResponse.json(
+      { error: "Stripe is not configured" },
+      { status: 503 }
+    );
+  }
+
+  const Stripe = (await import("stripe")).default;
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: "2025-01-27.acacia" as any,
+  });
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
   const body = await request.text();
   const signature = request.headers.get("stripe-signature");
 
@@ -25,7 +32,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "No signature" }, { status: 400 });
   }
 
-  let event: Stripe.Event;
+  let event: any;
   try {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
   } catch (err: any) {
@@ -33,18 +40,26 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
+  // Handle test events
+  if (event.id.startsWith("evt_test_")) {
+    console.log("[Webhook] Test event detected, returning verification response");
+    return NextResponse.json({ verified: true });
+  }
+
   const supabase = getSupabaseAdmin();
+  if (!supabase) {
+    return NextResponse.json({ error: "Database not configured" }, { status: 503 });
+  }
 
   try {
     switch (event.type) {
       case "checkout.session.completed": {
-        const session = event.data.object as Stripe.Checkout.Session;
+        const session = event.data.object;
         const userId = session.metadata?.supabase_user_id;
         const customerId = session.customer as string;
         const subscriptionId = session.subscription as string;
 
         if (userId) {
-          // Update user profile
           await supabase
             .from("profiles")
             .update({
@@ -52,11 +67,10 @@ export async function POST(request: NextRequest) {
               stripe_customer_id: customerId,
               stripe_subscription_id: subscriptionId,
               premium_granted_by: "stripe",
-              premium_expires_at: null, // Managed by Stripe subscription
+              premium_expires_at: null,
             })
             .eq("id", userId);
 
-          // Create subscription record
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
           await supabase
             .from("subscriptions")
@@ -69,7 +83,6 @@ export async function POST(request: NextRequest) {
               current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
             }, { onConflict: "stripe_subscription_id" });
 
-          // Record payment
           await supabase
             .from("payments")
             .insert({
@@ -85,11 +98,10 @@ export async function POST(request: NextRequest) {
       }
 
       case "invoice.payment_succeeded": {
-        const invoice = event.data.object as Stripe.Invoice;
+        const invoice = event.data.object;
         const subscriptionId = invoice.subscription as string;
         const customerId = invoice.customer as string;
 
-        // Find user by stripe_customer_id
         const { data: profile } = await supabase
           .from("profiles")
           .select("id")
@@ -97,7 +109,6 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (profile) {
-          // Update subscription period
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
           await supabase
             .from("subscriptions")
@@ -108,13 +119,11 @@ export async function POST(request: NextRequest) {
             })
             .eq("stripe_subscription_id", subscriptionId);
 
-          // Ensure premium is active
           await supabase
             .from("profiles")
             .update({ is_premium: true })
             .eq("id", profile.id);
 
-          // Record payment
           await supabase
             .from("payments")
             .insert({
@@ -130,7 +139,7 @@ export async function POST(request: NextRequest) {
       }
 
       case "invoice.payment_failed": {
-        const invoice = event.data.object as Stripe.Invoice;
+        const invoice = event.data.object;
         const customerId = invoice.customer as string;
 
         const { data: profile } = await supabase
@@ -149,7 +158,7 @@ export async function POST(request: NextRequest) {
       }
 
       case "customer.subscription.deleted": {
-        const subscription = event.data.object as Stripe.Subscription;
+        const subscription = event.data.object;
         const customerId = subscription.customer as string;
 
         const { data: profile } = await supabase
@@ -177,7 +186,7 @@ export async function POST(request: NextRequest) {
       }
 
       case "customer.subscription.updated": {
-        const subscription = event.data.object as Stripe.Subscription;
+        const subscription = event.data.object;
         const customerId = subscription.customer as string;
 
         const { data: profile } = await supabase

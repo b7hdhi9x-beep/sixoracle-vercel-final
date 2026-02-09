@@ -1,14 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import Stripe from "stripe";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-01-27.acacia" as any,
-});
-
-const PRICE_ID = process.env.STRIPE_PRICE_ID; // Set this in env vars
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if Stripe is configured
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return NextResponse.json(
+        { error: "決済システムは現在準備中です。もうしばらくお待ちください。" },
+        { status: 503 }
+      );
+    }
+
+    // Dynamic import to avoid build errors when Stripe is not installed
+    const Stripe = (await import("stripe")).default;
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: "2025-01-27.acacia" as any,
+    });
+
     const { userId, email, returnUrl } = await request.json();
 
     if (!userId || !email) {
@@ -17,7 +24,7 @@ export async function POST(request: NextRequest) {
 
     // Create or retrieve Stripe customer
     const customers = await stripe.customers.list({ email, limit: 1 });
-    let customer: Stripe.Customer;
+    let customer;
 
     if (customers.data.length > 0) {
       customer = customers.data[0];
