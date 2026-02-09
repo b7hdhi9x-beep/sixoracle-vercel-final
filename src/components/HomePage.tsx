@@ -263,6 +263,9 @@ export default function HomePage() {
                     <ArrowRight className="w-5 h-5" />
                   </button>
                   <p className="text-center text-xs text-gray-500 mt-3">
+                    お支払い方法：銀行振込のみ
+                  </p>
+                  <p className="text-center text-xs text-gray-500 mt-1">
                     ※ いつでも解約可能です
                   </p>
                 </div>
