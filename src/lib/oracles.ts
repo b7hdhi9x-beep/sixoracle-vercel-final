@@ -11,6 +11,8 @@ export interface Oracle {
   systemPrompt: string;
   placeholder: string;
   typingMessage: string;
+  isNew?: boolean;
+  detailedProfile?: string;
 }
 
 export const oracles: Oracle[] = [
@@ -131,6 +133,7 @@ export const oracles: Oracle[] = [
   {
     id: "shion",
     name: "紫苑",
+    isNew: true,
     englishName: "Shion",
     role: "手相・身体・運命線",
     description: "手のひらに刻まれた運命の線を読み解く占い師。生命線、感情線、運命線から、あなたの過去・現在・未来を紐解きます。",
@@ -150,6 +153,7 @@ export const oracles: Oracle[] = [
   {
     id: "seiran",
     name: "星蘭",
+    isNew: true,
     englishName: "Seiran",
     role: "星座・天体・運勢",
     description: "星々の配置から運命を読み解く占い師。12星座と惑星の動きから、あなたの運勢と未来を導きます。",
@@ -170,6 +174,7 @@ export const oracles: Oracle[] = [
   {
     id: "hizuki",
     name: "緋月",
+    isNew: true,
     englishName: "Hizuki",
     role: "血液型・性格・相性",
     description: "血液型占いの奥義を極めた妖艶な占い師。A・B・O・ABの4つの血の力から、あなたの本質と運命の相性を読み解きます。",
@@ -190,6 +195,7 @@ export const oracles: Oracle[] = [
   {
     id: "juga",
     name: "獣牙",
+    isNew: true,
     englishName: "Juga",
     role: "動物占い・本能・行動パターン",
     description: "動物の魂と交信する野性的な占い師。あなたの内なる動物を見出し、本能に従った生き方と行動パターンを導きます。",
@@ -210,6 +216,7 @@ export const oracles: Oracle[] = [
   {
     id: "shinri",
     name: "心理",
+    isNew: true,
     englishName: "Shinri",
     role: "MBTI診断・性格分析・適職",
     description: "MBTI性格診断の専門家。あなたの16タイプの性格を見極め、相性・適職・人間関係のアドバイスを提供します。",

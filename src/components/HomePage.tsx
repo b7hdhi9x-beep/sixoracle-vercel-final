@@ -21,6 +21,7 @@ export default function HomePage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   const faqs = [
+    { q: "新しく占い師を追加しました！", a: "六神ノ間は創設時の6人の占い師から始まりました。「六神」の名はこの創設メンバーに由来しており、屋号は変わりません。その後、新たに5人の占い師が加わりました：紫苑（手相）、星蘭（西洋占星術）、緋月（血液型）、獣牙（動物占い）、心理（MBTI）。現在は11人体制で、今後も新しい占い師を追加していきますが、「六神ノ間」の屋号はそのままです。" },
     { q: "AI占いとは何ですか？", a: "最新のAI技術を活用した占いサービスです。11人の個性豊かなAI占い師が、あなたの悩みに24時間いつでも寄り添い、的確なアドバイスを提供します。" },
     { q: "料金はいくらですか？", a: "月額¥1,980（税込）で、全11人のAI占い師に鑑定回数無制限でご相談いただけます。一般的な占いサービスでは1回3,000〜10,000円ですので、非常にお得です。" },
     { q: "どの占い師に相談すればいいですか？", a: "お悩みの内容に合わせてお選びください。恋愛なら玲蘭、タイミングなら蒼真、性格分析なら朔夜、MBTI診断なら心理など、それぞれ専門分野があります。" },
@@ -139,6 +140,15 @@ export default function HomePage() {
                     className="oracle-card h-full overflow-hidden group cursor-pointer"
                     onClick={() => router.push(isAuthenticated ? `/dashboard?oracle=${oracle.id}` : "/login")}
                   >
+                    {/* NEW Badge */}
+                    {oracle.isNew && (
+                      <div className="absolute top-3 right-3 z-20">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-500 to-yellow-400 text-black text-xs font-bold shadow-lg animate-pulse">
+                          <Sparkles className="w-3 h-3" />
+                          NEW
+                        </span>
+                      </div>
+                    )}
                     {/* Oracle Image */}
                     <div className="relative aspect-square overflow-hidden">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -175,6 +185,15 @@ export default function HomePage() {
                             {tag}
                           </span>
                         ))}
+                      </div>
+                      {/* Profile Link */}
+                      <div className="mt-3 pt-3 border-t border-white/5">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); router.push(`/oracle/${oracle.id}`); }}
+                          className="text-xs text-gold/60 hover:text-gold transition-colors"
+                        >
+                          詳しく見る →
+                        </button>
                       </div>
                     </div>
                   </div>
