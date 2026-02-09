@@ -282,7 +282,7 @@ export default function DashboardContent() {
                 </div>
                 {!user?.isPremium && (
                   <button
-                    onClick={() => alert("Stripe決済は準備中です。")}
+                    onClick={() => router.push("/login")}
                     className="block w-full text-center py-2 rounded-lg bg-gradient-to-r from-amber-500 to-yellow-500 text-black text-sm font-semibold hover:from-amber-600 hover:to-yellow-600 transition-all"
                   >
                     <Crown className="w-4 h-4 inline mr-1" />
@@ -421,7 +421,7 @@ export default function DashboardContent() {
                 <Crown className="w-6 h-6 text-amber-400 mx-auto mb-2" />
                 <p className="text-sm text-amber-200 mb-3">鑑定機能をご利用いただくには、プレミアムプランへの登録が必要です</p>
                 <button
-                  onClick={() => alert("Stripe決済は準備中です。")}
+                  onClick={() => router.push("/login")}
                   className="px-6 py-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-yellow-500 text-black text-sm font-semibold hover:from-amber-600 hover:to-yellow-600 transition-all"
                 >
                   プレミアムに登録（¥1,980/月）

@@ -30,7 +30,7 @@ export default function LegalContent() {
                 </tr>
                 <tr className="border-b border-gray-700">
                   <td className="py-3 pr-4 text-gold font-medium whitespace-nowrap">支払方法</td>
-                  <td className="py-3">クレジットカード（Stripe決済）</td>
+                  <td className="py-3">銀行振込のみ</td>
                 </tr>
                 <tr className="border-b border-gray-700">
                   <td className="py-3 pr-4 text-gold font-medium whitespace-nowrap">サービス提供時期</td>

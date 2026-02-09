@@ -9,7 +9,7 @@ interface User {
   nickname?: string;
   createdAt: number;
   premiumExpiry?: number; // Unix timestamp when premium expires
-  premiumGrantedBy?: string; // "stripe" | "admin" | undefined
+  premiumGrantedBy?: string; // "bank_transfer" | "admin" | "activation_code" | undefined
 }
 
 interface AuthContextType {
@@ -160,7 +160,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       saveUser({
         ...user,
         isPremium: true,
-        premiumGrantedBy: "stripe",
+        premiumGrantedBy: "bank_transfer",
       });
     }
   }, [user, saveUser]);
