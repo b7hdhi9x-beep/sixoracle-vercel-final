@@ -205,11 +205,7 @@ export async function canSendMessageDB(
   freeMessagesRemaining: number
 ): Promise<{ allowed: boolean; reason?: string }> {
   if (isPremium) {
-    // Premium: 100 messages per day
-    const dailyCount = await getDailyUsageFromDB(userId);
-    if (dailyCount >= 100) {
-      return { allowed: false, reason: "本日の鑑定回数上限（100回）に達しました。明日またお越しください。" };
-    }
+    // プレミアムユーザーは完全無制限
     return { allowed: true };
   }
 

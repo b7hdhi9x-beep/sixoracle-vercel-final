@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
               name: "六神ノ間 プレミアムプラン",
               description: "11人のAI占い師による鑑定回数無制限サービス",
             },
-            unit_amount: 2900,
+            unit_amount: 1980,
             recurring: {
               interval: "month",
             },

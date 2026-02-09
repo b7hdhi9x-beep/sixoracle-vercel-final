@@ -161,7 +161,7 @@ export default function PricingContent() {
               {/* Price */}
               <div className="text-center mb-8">
                 <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-5xl font-bold text-white">¥2,900</span>
+                  <span className="text-5xl font-bold text-white">¥1,980</span>
                   <span className="text-xl text-gray-400">/ 月（税込）</span>
                 </div>
               </div>
@@ -170,7 +170,7 @@ export default function PricingContent() {
               <ul className="space-y-4 mb-8">
                 {[
                   "11人のAI占い師全員に相談可能",
-                  "鑑定回数 1日100回まで",
+                  "鑑定回数無制限",
                   "24時間いつでも相談可能",
                   "チャット履歴の永久保存",
                   "プロフィール連携で精度UP",

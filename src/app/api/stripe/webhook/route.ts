@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
             .insert({
               user_id: userId,
               stripe_payment_intent_id: session.payment_intent as string,
-              amount: session.amount_total || 2900,
+              amount: session.amount_total || 1980,
               currency: "jpy",
               status: "succeeded",
               description: "六神ノ間 プレミアムプラン - 初回決済",

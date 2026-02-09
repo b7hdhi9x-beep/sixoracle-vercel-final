@@ -87,6 +87,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Today's date for tracking
+    const today = new Date().toISOString().split("T")[0];
+
     // Detect conversation mode from the latest user message
     const latestUserMessage = messages[messages.length - 1]?.content || "";
     const conversationMode = detectConversationMode(latestUserMessage);
@@ -204,8 +207,8 @@ export async function POST(request: NextRequest) {
       }
 
       // Save messages to chat_messages table
+      let currentSessionId = sessionId;
       if (oracleId) {
-        let currentSessionId = sessionId;
 
         // Create session if not exists
         if (!currentSessionId) {
@@ -333,7 +336,7 @@ export async function POST(request: NextRequest) {
     const responseData: any = {
       message: text,
       conversationMode,
-      sessionId: sessionId || undefined,
+      sessionId: sessionId || currentSessionId || undefined,
     };
 
     if (supabase && userId) {
