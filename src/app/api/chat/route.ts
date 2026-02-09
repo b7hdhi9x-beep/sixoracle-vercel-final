@@ -37,7 +37,7 @@ async function callGeminiWithRetry(body: any, maxRetries = 2): Promise<Response>
 
 // Constants
 const FREE_MESSAGE_LIMIT = 5;
-const PREMIUM_DAILY_LIMIT = 100;
+// プレミアムユーザーは無制限
 
 export async function POST(request: NextRequest) {
   try {
@@ -81,21 +81,12 @@ export async function POST(request: NextRequest) {
         }
 
         if (isPremium) {
-          if (dailyCount >= PREMIUM_DAILY_LIMIT) {
-            return NextResponse.json(
-              {
-                error: "本日の鑑定回数上限（100回）に達しました。明日またお越しください。",
-                limitReached: true,
-                isPremium: true,
-              },
-              { status: 429 }
-            );
-          }
+          // プレミアムユーザーは無制限 - 制限チェックなし
         } else {
           if (freeRemaining <= 0) {
             return NextResponse.json(
               {
-                error: "無料鑑定の回数を使い切りました。プレミアムプランに登録すると、1日100回まで鑑定できます。",
+                error: "無料鑑定の回数を使い切りました。プレミアムプランに登録すると、無制限で鑑定できます。",
                 limitReached: true,
                 isPremium: false,
                 freeRemaining: 0,
