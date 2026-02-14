@@ -1,10 +1,21 @@
 import { NextRequest } from "next/server";
 import { getGeminiModel } from "@/lib/gemini";
 import { getOracleById } from "@/lib/oracles";
+import { createClient } from "@/lib/supabase/server";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, oracleId, history } = await request.json();
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return Response.json({ error: "認証が必要です" }, { status: 401 });
+    }
+
+    const { message, oracleId, sessionId } = await request.json();
 
     if (!message || !oracleId) {
       return Response.json(
@@ -28,22 +39,68 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // チャット履歴を構築
-    const chatHistory = (history || []).map(
-      (msg: { role: string; content: string }) => ({
-        role: msg.role === "assistant" ? "model" : "user",
-        parts: [{ text: msg.content }],
-      })
-    );
+    // セッションの取得 or 作成
+    let chatSession;
+    if (sessionId) {
+      chatSession = await prisma.chatSession.findFirst({
+        where: { id: sessionId, userId: user.id },
+        include: { messages: { orderBy: { createdAt: "asc" } } },
+      });
+    }
 
+    if (!chatSession) {
+      chatSession = await prisma.chatSession.create({
+        data: {
+          userId: user.id,
+          oracleId,
+          title: message.slice(0, 50),
+        },
+        include: { messages: { orderBy: { createdAt: "asc" } } },
+      });
+
+      // 初回は占い師の挨拶を保存
+      await prisma.chatMessage.create({
+        data: {
+          sessionId: chatSession.id,
+          role: "ASSISTANT",
+          content: oracle.greeting,
+        },
+      });
+    }
+
+    // ユーザーメッセージをDBに保存
+    await prisma.chatMessage.create({
+      data: {
+        sessionId: chatSession.id,
+        role: "USER",
+        content: message,
+      },
+    });
+
+    // チャット履歴を構築（DB から最新を取得）
+    const dbMessages = await prisma.chatMessage.findMany({
+      where: { sessionId: chatSession.id },
+      orderBy: { createdAt: "asc" },
+    });
+
+    const chatHistory = dbMessages
+      .filter((m) => m.role !== "SYSTEM")
+      .map((msg) => ({
+        role: msg.role === "ASSISTANT" ? "model" : "user",
+        parts: [{ text: msg.content }],
+      }));
+
+    // Gemini へ送信（履歴の最後のuserメッセージは除く — sendMessageで送るため）
+    const historyForGemini = chatHistory.slice(0, -1);
     const model = getGeminiModel();
     const chat = model.startChat({
-      history: chatHistory,
+      history: historyForGemini,
       systemInstruction: oracle.systemPrompt,
     });
 
-    // ストリーミングレスポンス
     const result = await chat.sendMessageStream(message);
+
+    let fullResponse = "";
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
@@ -52,11 +109,33 @@ export async function POST(request: NextRequest) {
           for await (const chunk of result.stream) {
             const text = chunk.text();
             if (text) {
+              fullResponse += text;
               controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify({ text })}\n\n`)
+                encoder.encode(
+                  `data: ${JSON.stringify({ text, sessionId: chatSession.id })}\n\n`
+                )
               );
             }
           }
+
+          // アシスタントの応答をDBに保存
+          await prisma.chatMessage.create({
+            data: {
+              sessionId: chatSession.id,
+              role: "ASSISTANT",
+              content: fullResponse,
+            },
+          });
+
+          // 利用ログ記録
+          await prisma.oracleUsageLog.create({
+            data: {
+              userId: user.id,
+              oracleId,
+              tokens: fullResponse.length,
+            },
+          });
+
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
           controller.close();
         } catch (error) {

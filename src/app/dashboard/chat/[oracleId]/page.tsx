@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useState, useRef, useEffect, useCallback, Suspense } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { getOracleById, oracles } from "@/lib/oracles";
@@ -23,32 +23,59 @@ interface Message {
 }
 
 export default function ChatPage() {
+  return (
+    <Suspense>
+      <ChatPageInner />
+    </Suspense>
+  );
+}
+
+function ChatPageInner() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const oracleId = params.oracleId as string;
   const oracle = getOracleById(oracleId);
+  const existingSessionId = searchParams.get("session");
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [hasGreeted, setHasGreeted] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(
+    existingSessionId
+  );
+  const [initialized, setInitialized] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // 初回挨拶
+  // 既存セッションの復元 or 初回挨拶
   useEffect(() => {
-    if (oracle && !hasGreeted) {
-      setHasGreeted(true);
+    if (initialized || !oracle) return;
+    setInitialized(true);
+
+    if (existingSessionId) {
+      fetch(`/api/chat/sessions/${existingSessionId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.messages) {
+            setMessages(
+              data.messages
+                .filter((m: { role: string }) => m.role !== "SYSTEM")
+                .map((m: { id: string; role: string; content: string }) => ({
+                  id: m.id,
+                  role: m.role === "USER" ? "user" : "assistant",
+                  content: m.content,
+                }))
+            );
+          }
+        })
+        .catch(console.error);
+    } else {
       setMessages([
-        {
-          id: "greeting",
-          role: "assistant",
-          content: oracle.greeting,
-        },
+        { id: "greeting", role: "assistant", content: oracle.greeting },
       ]);
     }
-  }, [oracle, hasGreeted]);
+  }, [oracle, existingSessionId, initialized]);
 
-  // 自動スクロール
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -77,30 +104,23 @@ export default function ChatPage() {
     setMessages([...currentMessages, assistantMessage]);
 
     try {
-      const history = currentMessages
-        .filter((m) => m.id !== "greeting")
-        .map((m) => ({
-          role: m.role,
-          content: m.content,
-        }));
-
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: userMessage.content,
           oracleId: oracle.id,
-          history: history.slice(0, -1), // 最新のuserメッセージは除く（messageに入れてるので）
+          sessionId,
         }),
       });
 
       if (!response.ok) {
-        throw new Error("チャットAPIでエラーが発生しました");
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || "チャットAPIでエラーが発生しました");
       }
 
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
-
       if (!reader) throw new Error("ストリームが取得できませんでした");
 
       let fullText = "";
@@ -129,9 +149,10 @@ export default function ChatPage() {
                   )
                 );
               }
-              if (parsed.error) {
-                throw new Error(parsed.error);
+              if (parsed.sessionId && !sessionId) {
+                setSessionId(parsed.sessionId);
               }
+              if (parsed.error) throw new Error(parsed.error);
             } catch (e) {
               if (e instanceof SyntaxError) continue;
               throw e;
@@ -156,7 +177,7 @@ export default function ChatPage() {
       setIsLoading(false);
       inputRef.current?.focus();
     }
-  }, [input, isLoading, oracle, messages]);
+  }, [input, isLoading, oracle, messages, sessionId]);
 
   if (!oracle) {
     return (
@@ -164,7 +185,10 @@ export default function ChatPage() {
         <div className="text-center space-y-4">
           <p className="text-[#9ca3af]">占い師が見つかりません</p>
           <Link href="/dashboard">
-            <Button variant="outline" className="border-[#d4af37]/30 text-[#d4af37]">
+            <Button
+              variant="outline"
+              className="border-[#d4af37]/30 text-[#d4af37]"
+            >
               占い師一覧に戻る
             </Button>
           </Link>
@@ -216,66 +240,89 @@ export default function ChatPage() {
             </div>
           </div>
 
-          {/* 占い師一覧シート */}
-          <Sheet>
-            <SheetTrigger asChild>
-              <button className="text-[#9ca3af] hover:text-[#d4af37] transition-colors p-2">
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                </svg>
-              </button>
-            </SheetTrigger>
-            <SheetContent className="bg-[#0d0d24] border-[rgba(212,175,55,0.15)] overflow-y-auto">
-              <SheetHeader>
-                <SheetTitle className="text-[#d4af37] font-[var(--font-noto-serif-jp)]">
-                  占い師を変更
-                </SheetTitle>
-              </SheetHeader>
-              <div className="mt-6 space-y-2">
-                {oracles.map((o) => (
-                  <Link
-                    key={o.id}
-                    href={`/dashboard/chat/${o.id}`}
-                    className={`flex items-center gap-3 p-3 rounded-lg transition-all ${
-                      o.id === oracleId
-                        ? "bg-[rgba(212,175,55,0.15)]"
-                        : "hover:bg-[rgba(255,255,255,0.05)]"
-                    }`}
+          <div className="flex items-center gap-2">
+            {/* 新規チャット */}
+            <Link
+              href={`/dashboard/chat/${oracleId}`}
+              className="text-[#9ca3af] hover:text-[#d4af37] transition-colors p-2"
+              title="新しいチャット"
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+            </Link>
+
+            {/* 占い師切替シート */}
+            <Sheet>
+              <SheetTrigger asChild>
+                <button className="text-[#9ca3af] hover:text-[#d4af37] transition-colors p-2">
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
                   >
-                    <div
-                      className="text-xl w-9 h-9 rounded-full flex items-center justify-center shrink-0"
-                      style={{
-                        background: `linear-gradient(135deg, ${o.gradientFrom}, ${o.gradientTo})`,
-                      }}
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 6h16M4 12h16M4 18h16"
+                    />
+                  </svg>
+                </button>
+              </SheetTrigger>
+              <SheetContent className="bg-[#0d0d24] border-[rgba(212,175,55,0.15)] overflow-y-auto">
+                <SheetHeader>
+                  <SheetTitle className="text-[#d4af37] font-[var(--font-noto-serif-jp)]">
+                    占い師を変更
+                  </SheetTitle>
+                </SheetHeader>
+                <div className="mt-6 space-y-2">
+                  {oracles.map((o) => (
+                    <Link
+                      key={o.id}
+                      href={`/dashboard/chat/${o.id}`}
+                      className={`flex items-center gap-3 p-3 rounded-lg transition-all ${
+                        o.id === oracleId
+                          ? "bg-[rgba(212,175,55,0.15)]"
+                          : "hover:bg-[rgba(255,255,255,0.05)]"
+                      }`}
                     >
-                      {o.icon}
-                    </div>
-                    <div>
-                      <p
-                        className="text-sm font-bold"
-                        style={{ color: o.color }}
+                      <div
+                        className="text-xl w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                        style={{
+                          background: `linear-gradient(135deg, ${o.gradientFrom}, ${o.gradientTo})`,
+                        }}
                       >
-                        {o.name}
-                      </p>
-                      <p className="text-[10px] text-[#9ca3af]">
-                        {o.specialty}
-                      </p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </SheetContent>
-          </Sheet>
+                        {o.icon}
+                      </div>
+                      <div>
+                        <p
+                          className="text-sm font-bold"
+                          style={{ color: o.color }}
+                        >
+                          {o.name}
+                        </p>
+                        <p className="text-[10px] text-[#9ca3af]">
+                          {o.specialty}
+                        </p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
       </header>
 
@@ -295,9 +342,7 @@ export default function ChatPage() {
               >
                 <div
                   className={`flex gap-3 max-w-[85%] ${
-                    message.role === "user"
-                      ? "flex-row-reverse"
-                      : "flex-row"
+                    message.role === "user" ? "flex-row-reverse" : "flex-row"
                   }`}
                 >
                   {message.role === "assistant" && (
@@ -350,7 +395,11 @@ export default function ChatPage() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                if (
+                  e.key === "Enter" &&
+                  !e.shiftKey &&
+                  !e.nativeEvent.isComposing
+                ) {
                   e.preventDefault();
                   sendMessage();
                 }

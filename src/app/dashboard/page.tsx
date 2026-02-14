@@ -1,10 +1,29 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { oracles } from "@/lib/oracles";
+import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import type { User } from "@supabase/supabase-js";
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const supabase = createClient();
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+  }, [supabase.auth]);
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    router.push("/");
+    router.refresh();
+  }
+
   return (
     <div className="min-h-screen">
       {/* ヘッダー */}
@@ -16,14 +35,30 @@ export default function DashboardPage() {
             </h1>
           </Link>
           <div className="flex items-center gap-4">
-            <span className="text-xs text-[#9ca3af] hidden sm:inline">
-              占い師を選んで鑑定を始めましょう
-            </span>
+            <Link
+              href="/dashboard/history"
+              className="text-xs text-[#9ca3af] hover:text-[#d4af37] transition-colors hidden sm:inline"
+            >
+              鑑定履歴
+            </Link>
+            {user && (
+              <span className="text-xs text-[#9ca3af] hidden md:inline">
+                {user.email}
+              </span>
+            )}
+            <Button
+              onClick={handleLogout}
+              variant="outline"
+              size="sm"
+              className="border-[rgba(212,175,55,0.3)] text-[#9ca3af] hover:text-[#d4af37] text-xs"
+            >
+              ログアウト
+            </Button>
           </div>
         </div>
       </header>
 
-      {/* メインコンテンツ */}
+      {/* メイン */}
       <main className="max-w-7xl mx-auto px-4 py-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -48,7 +83,6 @@ export default function DashboardPage() {
             >
               <Link href={`/dashboard/chat/${oracle.id}`}>
                 <div className="glass-card rounded-xl p-5 cursor-pointer transition-all duration-300 hover:scale-[1.03] group h-full flex flex-col">
-                  {/* アバター */}
                   <div className="flex items-center gap-3 mb-4">
                     <div
                       className="text-3xl w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-lg"
@@ -71,19 +105,16 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  {/* 専門 */}
                   <div className="mb-3">
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#7c3aed]/20 text-[#a855f7] border border-[#7c3aed]/30">
                       {oracle.specialty}
                     </span>
                   </div>
 
-                  {/* 説明 */}
                   <p className="text-xs text-[#9ca3af] leading-relaxed line-clamp-3 flex-1">
                     {oracle.description}
                   </p>
 
-                  {/* CTA */}
                   <div className="mt-4 pt-3 border-t border-[rgba(212,175,55,0.1)]">
                     <span className="text-xs text-[#d4af37] group-hover:text-[#f4d03f] transition-colors flex items-center gap-1">
                       鑑定を始める
