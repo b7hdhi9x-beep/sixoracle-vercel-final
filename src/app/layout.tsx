@@ -1,5 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Cinzel, Noto_Serif_JP, Noto_Sans_JP } from "next/font/google";
+import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 import "./globals.css";
 
 const cinzel = Cinzel({
@@ -37,6 +38,20 @@ export const metadata: Metadata = {
     "易経",
     "六神ノ間",
   ],
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "六神ノ間",
+  },
+  icons: {
+    icon: "/icons/icon-192.png",
+    apple: "/icons/apple-touch-icon.png",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#d4af37",
 };
 
 export default function RootLayout({
@@ -50,6 +65,7 @@ export default function RootLayout({
         className={`${cinzel.variable} ${notoSerifJP.variable} ${notoSansJP.variable} font-sans antialiased`}
       >
         {children}
+        <ServiceWorkerRegistration />
       </body>
     </html>
   );

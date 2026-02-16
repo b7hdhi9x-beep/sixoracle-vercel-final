@@ -22,11 +22,12 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  subscription   Subscription?
-  payments       Payment[]
-  chatSessions   ChatSession[]
-  notifications  Notification[]
+  subscription    Subscription?
+  payments        Payment[]
+  chatSessions    ChatSession[]
+  notifications   Notification[]
   oracleUsageLogs OracleUsageLog[]
+  favorites       FavoriteOracle[]
 }
 
 // ============================================================
@@ -89,8 +90,9 @@ model ChatSession {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages ChatMessage[]
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages       ChatMessage[]
+  sharedSessions SharedSession[]
 
   @@index([userId, oracleId])
   @@index([userId, updatedAt])
@@ -142,6 +144,7 @@ model Notification {
   message   String           @db.Text
   read      Boolean          @default(false)
   type      NotificationType @default(INFO)
+  link      String?
   createdAt DateTime         @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -154,4 +157,35 @@ enum NotificationType {
   WARNING
   SUCCESS
   FORTUNE
+}
+
+// ============================================================
+// お気に入り占い師
+// ============================================================
+
+model FavoriteOracle {
+  id        String   @id @default(cuid())
+  userId    String   @db.Uuid
+  oracleId  String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, oracleId])
+}
+
+// ============================================================
+// チャットセッション共有
+// ============================================================
+
+model SharedSession {
+  id         String   @id @default(cuid())
+  sessionId  String
+  shareToken String   @unique
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([shareToken])
 }

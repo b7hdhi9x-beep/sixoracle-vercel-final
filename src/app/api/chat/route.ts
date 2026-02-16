@@ -86,16 +86,32 @@ export async function POST(request: NextRequest) {
     const chatHistory = dbMessages
       .filter((m) => m.role !== "SYSTEM")
       .map((msg) => ({
-        role: msg.role === "ASSISTANT" ? "model" : "user",
+        role: msg.role === "ASSISTANT" ? ("model" as const) : ("user" as const),
         parts: [{ text: msg.content }],
       }));
 
     // Gemini へ送信（履歴の最後のuserメッセージは除く — sendMessageで送るため）
-    const historyForGemini = chatHistory.slice(0, -1);
+    const historyBeforeLast = chatHistory.slice(0, -1);
+
+    // Gemini API は履歴が "user" ロールから始まることを要求する
+    // DB先頭の挨拶メッセージ（model）をスキップ
+    const firstUserIdx = historyBeforeLast.findIndex((m) => m.role === "user");
+    const historyForGemini =
+      firstUserIdx >= 0 ? historyBeforeLast.slice(firstUserIdx) : [];
+
     const model = getGeminiModel();
     const chat = model.startChat({
       history: historyForGemini,
-      systemInstruction: oracle.systemPrompt,
+      systemInstruction: {
+        role: "user" as const,
+        parts: [{ text: oracle.systemPrompt }],
+      },
+    });
+
+    console.log("[chat] Sending to Gemini:", {
+      oracleId,
+      historyLength: historyForGemini.length,
+      messagePreview: message.slice(0, 50),
     });
 
     const result = await chat.sendMessageStream(message);
@@ -139,6 +155,7 @@ export async function POST(request: NextRequest) {
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
           controller.close();
         } catch (error) {
+          console.error("[chat] Stream error:", error);
           const errorMessage =
             error instanceof Error ? error.message : "ストリーミングエラー";
           controller.enqueue(

@@ -1,7 +1,15 @@
+export interface OracleVoiceSettings {
+  pitch: number;
+  rate: number;
+  volume: number;
+  voiceType: "female" | "male" | "neutral";
+}
+
 export interface Oracle {
   id: string;
   name: string;
-  nameReading: string;
+  englishName: string;
+  role: string;
   title: string;
   specialty: string;
   description: string;
@@ -11,7 +19,14 @@ export interface Oracle {
   gradientFrom: string;
   gradientTo: string;
   icon: string;
+  image: string;
   systemPrompt: string;
+  isCore: boolean;
+  voiceSettings: OracleVoiceSettings;
+  placeholder: string;
+  typingMessage: string;
+  isNew?: boolean;
+  detailedProfile?: string;
 }
 
 export interface ChatMessageType {

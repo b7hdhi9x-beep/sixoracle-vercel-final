@@ -35,14 +35,20 @@ function HeroSection() {
         transition={{ duration: 1, ease: "easeOut" }}
         className="space-y-6"
       >
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.8 }}
-          className="text-[#a855f7] text-sm tracking-[0.3em] uppercase font-[var(--font-cinzel)]"
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1.2 }}
+          className="mb-4"
         >
-          Divine Fortune Telling
-        </motion.p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663228451672/wWPMmymhqoNMwmyZ.webp"
+            alt="六神ノ間"
+            className="w-full max-w-md md:max-w-lg mx-auto shadow-2xl"
+            loading="eager"
+          />
+        </motion.div>
 
         <h1 className="font-[var(--font-cinzel)] text-5xl md:text-7xl lg:text-8xl font-bold tracking-wider">
           <span className="text-[#d4af37] glow-gold">六神ノ間</span>
@@ -121,39 +127,44 @@ function OracleCard({
       viewport={{ once: true }}
     >
       <Link href={`/dashboard/chat/${oracle.id}`}>
-        <div className="glass-card rounded-xl p-6 cursor-pointer transition-all duration-300 hover:scale-[1.03] group h-full">
-          <div className="flex items-start gap-4">
-            <div
-              className="text-4xl w-14 h-14 rounded-full flex items-center justify-center shrink-0"
-              style={{
-                background: `linear-gradient(135deg, ${oracle.gradientFrom}, ${oracle.gradientTo})`,
-              }}
-            >
-              {oracle.icon}
+        <div className="glass-card rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:scale-[1.03] group h-full">
+          <div className="relative">
+            <img
+              src={oracle.image}
+              alt={oracle.name}
+              className="w-full aspect-square object-cover"
+              loading="lazy"
+            />
+            {oracle.isNew && (
+              <div className="absolute top-3 left-3 z-10">
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gradient-to-r from-rose-500 to-pink-600 text-white text-xs font-bold shadow-lg animate-pulse">
+                  NEW
+                </span>
+              </div>
+            )}
+          </div>
+          <div className="p-5 space-y-2">
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <h3
+                className="font-[var(--font-noto-serif-jp)] text-xl font-bold"
+                style={{ color: oracle.color }}
+              >
+                {oracle.name}
+              </h3>
+              <span className="text-xs text-[#9ca3af]">
+                {oracle.englishName}
+              </span>
             </div>
-            <div className="space-y-2 min-w-0">
-              <div className="flex items-baseline gap-2 flex-wrap">
-                <h3
-                  className="font-[var(--font-noto-serif-jp)] text-xl font-bold"
-                  style={{ color: oracle.color }}
-                >
-                  {oracle.name}
-                </h3>
-                <span className="text-xs text-[#9ca3af]">
-                  {oracle.nameReading}
-                </span>
-              </div>
-              <p className="text-xs text-[#d4af37]/70 tracking-wider">
-                {oracle.title}
-              </p>
-              <p className="text-sm text-[#9ca3af] leading-relaxed line-clamp-2">
-                {oracle.description}
-              </p>
-              <div className="pt-1">
-                <span className="text-xs px-2 py-1 rounded-full bg-[#7c3aed]/20 text-[#a855f7] border border-[#7c3aed]/30">
-                  {oracle.specialty}
-                </span>
-              </div>
+            <p className="text-xs text-[#d4af37]/70 tracking-wider">
+              {oracle.title}
+            </p>
+            <p className="text-sm text-[#9ca3af] leading-relaxed line-clamp-2">
+              {oracle.description}
+            </p>
+            <div className="pt-1">
+              <span className="text-xs px-2 py-1 rounded-full bg-[#7c3aed]/20 text-[#a855f7] border border-[#7c3aed]/30">
+                {oracle.specialty}
+              </span>
             </div>
           </div>
         </div>

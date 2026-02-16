@@ -22,6 +22,11 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // Auth callback は PKCE code_verifier を保持する必要があるためスキップ
+  if (request.nextUrl.pathname === "/auth/callback") {
+    return NextResponse.next();
+  }
+
   // Supabase セッション更新＋認証保護
   return updateSession(request);
 }

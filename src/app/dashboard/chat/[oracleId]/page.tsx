@@ -15,6 +15,9 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { FavoriteButton } from "@/components/favorite-button";
+import { ShareDialog } from "@/components/share-dialog";
+import { ExportMenu } from "@/components/export-menu";
 
 interface Message {
   id: string;
@@ -44,6 +47,7 @@ function ChatPageInner() {
     existingSessionId
   );
   const [initialized, setInitialized] = useState(false);
+  const [isFavorited, setIsFavorited] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -75,6 +79,16 @@ function ChatPageInner() {
       ]);
     }
   }, [oracle, existingSessionId, initialized]);
+
+  // Load favorite state
+  useEffect(() => {
+    fetch("/api/favorites")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setIsFavorited(data.includes(oracleId));
+      })
+      .catch(console.error);
+  }, [oracleId]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -221,13 +235,12 @@ function ChatPageInner() {
                 />
               </svg>
             </Link>
-            <div
-              className="text-2xl w-10 h-10 rounded-full flex items-center justify-center"
-              style={{
-                background: `linear-gradient(135deg, ${oracle.gradientFrom}, ${oracle.gradientTo})`,
-              }}
-            >
-              {oracle.icon}
+            <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-[rgba(212,175,55,0.3)]">
+              <img
+                src={oracle.image}
+                alt={oracle.name}
+                className="w-full h-full object-cover"
+              />
             </div>
             <div>
               <h1
@@ -240,7 +253,14 @@ function ChatPageInner() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            <FavoriteButton
+              oracleId={oracleId}
+              initialFavorited={isFavorited}
+            />
+            <ShareDialog sessionId={sessionId} />
+            <ExportMenu sessionId={sessionId} />
+
             {/* 新規チャット */}
             <Link
               href={`/dashboard/chat/${oracleId}`}
@@ -298,13 +318,13 @@ function ChatPageInner() {
                           : "hover:bg-[rgba(255,255,255,0.05)]"
                       }`}
                     >
-                      <div
-                        className="text-xl w-9 h-9 rounded-full flex items-center justify-center shrink-0"
-                        style={{
-                          background: `linear-gradient(135deg, ${o.gradientFrom}, ${o.gradientTo})`,
-                        }}
-                      >
-                        {o.icon}
+                      <div className="w-9 h-9 rounded-full overflow-hidden shrink-0 ring-1 ring-[rgba(212,175,55,0.2)]">
+                        <img
+                          src={o.image}
+                          alt={o.name}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
                       </div>
                       <div>
                         <p
@@ -346,13 +366,12 @@ function ChatPageInner() {
                   }`}
                 >
                   {message.role === "assistant" && (
-                    <div
-                      className="text-lg w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1"
-                      style={{
-                        background: `linear-gradient(135deg, ${oracle.gradientFrom}, ${oracle.gradientTo})`,
-                      }}
-                    >
-                      {oracle.icon}
+                    <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 mt-1 ring-1 ring-[rgba(212,175,55,0.2)]">
+                      <img
+                        src={oracle.image}
+                        alt={oracle.name}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
                   )}
                   <div

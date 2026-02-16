@@ -28,6 +28,28 @@ export default function HistoryPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  function handleExport(sessionId: string, format: "txt" | "csv") {
+    window.open(`/api/export/${sessionId}?format=${format}`, "_blank");
+  }
+
+  async function handleShare(sessionId: string) {
+    try {
+      const res = await fetch("/api/share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId }),
+      });
+      const data = await res.json();
+      if (data.shareToken) {
+        const url = `${window.location.origin}/shared/${data.shareToken}`;
+        await navigator.clipboard.writeText(url);
+        alert("共有リンクをコピーしました（30日間有効）");
+      }
+    } catch {
+      alert("共有リンクの生成に失敗しました");
+    }
+  }
+
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-50 border-b border-[rgba(212,175,55,0.15)] bg-[#0a0a1a]/80 backdrop-blur-xl">
@@ -74,19 +96,20 @@ export default function HistoryPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.03 }}
                 >
-                  <Link
-                    href={`/dashboard/chat/${session.oracleId}?session=${session.id}`}
-                  >
-                    <div className="glass-card rounded-lg p-4 hover:scale-[1.01] transition-all cursor-pointer">
-                      <div className="flex items-start gap-3">
+                  <div className="glass-card rounded-lg p-4 hover:scale-[1.01] transition-all">
+                    <div className="flex items-start gap-3">
+                      <Link
+                        href={`/dashboard/chat/${session.oracleId}?session=${session.id}`}
+                        className="flex items-start gap-3 flex-1 min-w-0"
+                      >
                         {oracle && (
-                          <div
-                            className="text-xl w-10 h-10 rounded-full flex items-center justify-center shrink-0"
-                            style={{
-                              background: `linear-gradient(135deg, ${oracle.gradientFrom}, ${oracle.gradientTo})`,
-                            }}
-                          >
-                            {oracle.icon}
+                          <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 ring-1 ring-[rgba(212,175,55,0.2)]">
+                            <img
+                              src={oracle.image}
+                              alt={oracle.name}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
                           </div>
                         )}
                         <div className="min-w-0 flex-1">
@@ -111,9 +134,31 @@ export default function HistoryPage() {
                             {session._count.messages}件のメッセージ
                           </p>
                         </div>
+                      </Link>
+
+                      {/* Action buttons */}
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => handleShare(session.id)}
+                          className="text-[#9ca3af] hover:text-[#d4af37] transition-colors p-1.5"
+                          title="共有"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleExport(session.id, "txt")}
+                          className="text-[#9ca3af] hover:text-[#d4af37] transition-colors p-1.5"
+                          title="テキストで保存"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </button>
                       </div>
                     </div>
-                  </Link>
+                  </div>
                 </motion.div>
               );
             })}
