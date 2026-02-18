@@ -16,11 +16,11 @@ model User {
   email         String    @unique
   name          String?
   image         String?
-  birthDate     DateTime?
-  birthTime     String?
-  birthPlace    String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  birthDate     DateTime? @map("birth_date")
+  birthTime     String?   @map("birth_time")
+  birthPlace    String?   @map("birth_place")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
 
   subscription    Subscription?
   payments        Payment[]
@@ -28,6 +28,8 @@ model User {
   notifications   Notification[]
   oracleUsageLogs OracleUsageLog[]
   favorites       FavoriteOracle[]
+
+  @@map("users")
 }
 
 // ============================================================
@@ -36,18 +38,20 @@ model User {
 
 model Subscription {
   id                   String             @id @default(cuid())
-  userId               String             @unique @db.Uuid
-  stripeCustomerId     String?            @unique
-  stripeSubscriptionId String?            @unique
-  stripePriceId        String?
+  userId               String             @unique @map("user_id") @db.Uuid
+  stripeCustomerId     String?            @unique @map("stripe_customer_id")
+  stripeSubscriptionId String?            @unique @map("stripe_subscription_id")
+  stripePriceId        String?            @map("stripe_price_id")
   status               SubscriptionStatus @default(INACTIVE)
-  currentPeriodStart   DateTime?
-  currentPeriodEnd     DateTime?
-  cancelAtPeriodEnd    Boolean            @default(false)
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
+  currentPeriodStart   DateTime?          @map("current_period_start")
+  currentPeriodEnd     DateTime?          @map("current_period_end")
+  cancelAtPeriodEnd    Boolean            @default(false) @map("cancel_at_period_end")
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
 }
 
 enum SubscriptionStatus {
@@ -60,15 +64,17 @@ enum SubscriptionStatus {
 
 model Payment {
   id              String        @id @default(cuid())
-  userId          String        @db.Uuid
-  stripePaymentId String?       @unique
+  userId          String        @map("user_id") @db.Uuid
+  stripePaymentId String?       @unique @map("stripe_payment_id")
   amount          Int
   currency        String        @default("jpy")
   status          PaymentStatus @default(PENDING)
   description     String?
-  createdAt       DateTime      @default(now())
+  createdAt       DateTime      @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
 }
 
 enum PaymentStatus {
@@ -84,11 +90,11 @@ enum PaymentStatus {
 
 model ChatSession {
   id        String   @id @default(cuid())
-  userId    String   @db.Uuid
-  oracleId  String
+  userId    String   @map("user_id") @db.Uuid
+  oracleId  String   @map("oracle_id")
   title     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages       ChatMessage[]
@@ -96,18 +102,20 @@ model ChatSession {
 
   @@index([userId, oracleId])
   @@index([userId, updatedAt])
+  @@map("chat_sessions")
 }
 
 model ChatMessage {
   id        String      @id @default(cuid())
-  sessionId String
+  sessionId String      @map("session_id")
   role      MessageRole
   content   String      @db.Text
-  createdAt DateTime    @default(now())
+  createdAt DateTime    @default(now()) @map("created_at")
 
   session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId, createdAt])
+  @@map("chat_messages")
 }
 
 enum MessageRole {
@@ -122,15 +130,16 @@ enum MessageRole {
 
 model OracleUsageLog {
   id        String   @id @default(cuid())
-  userId    String   @db.Uuid
-  oracleId  String
+  userId    String   @map("user_id") @db.Uuid
+  oracleId  String   @map("oracle_id")
   tokens    Int      @default(0)
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, oracleId])
   @@index([userId, createdAt])
+  @@map("oracle_usage_logs")
 }
 
 // ============================================================
@@ -139,17 +148,18 @@ model OracleUsageLog {
 
 model Notification {
   id        String           @id @default(cuid())
-  userId    String           @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
   title     String
   message   String           @db.Text
   read      Boolean          @default(false)
   type      NotificationType @default(INFO)
   link      String?
-  createdAt DateTime         @default(now())
+  createdAt DateTime         @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, read])
+  @@map("notifications")
 }
 
 enum NotificationType {
@@ -165,13 +175,14 @@ enum NotificationType {
 
 model FavoriteOracle {
   id        String   @id @default(cuid())
-  userId    String   @db.Uuid
-  oracleId  String
-  createdAt DateTime @default(now())
+  userId    String   @map("user_id") @db.Uuid
+  oracleId  String   @map("oracle_id")
+  createdAt DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, oracleId])
+  @@map("favorite_oracles")
 }
 
 // ============================================================
@@ -180,12 +191,13 @@ model FavoriteOracle {
 
 model SharedSession {
   id         String   @id @default(cuid())
-  sessionId  String
-  shareToken String   @unique
-  expiresAt  DateTime
-  createdAt  DateTime @default(now())
+  sessionId  String   @map("session_id")
+  shareToken String   @unique @map("share_token")
+  expiresAt  DateTime @map("expires_at")
+  createdAt  DateTime @default(now()) @map("created_at")
 
   session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([shareToken])
+  @@map("shared_sessions")
 }
