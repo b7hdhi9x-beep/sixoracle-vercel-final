@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,21 @@ export default function SignupPage() {
   );
 }
 
+function localizeError(message: string): string {
+  if (message.includes("already registered") || message.includes("already been registered")) {
+    return "このメールアドレスは既に登録されています";
+  }
+  if (message.includes("Password should be at least")) {
+    return "パスワードは6文字以上で入力してください";
+  }
+  if (message.includes("Unable to validate email")) {
+    return "有効なメールアドレスを入力してください";
+  }
+  return message;
+}
+
 function SignupForm() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") || "/dashboard";
 
@@ -23,7 +37,6 @@ function SignupForm() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const supabase = createClient();
@@ -33,22 +46,34 @@ function SignupForm() {
     setError("");
     setLoading(true);
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: { name },
-        emailRedirectTo: `${window.location.origin}/auth/callback?redirectTo=${encodeURIComponent(redirectTo)}`,
       },
     });
 
     if (error) {
-      setError(error.message);
+      setError(localizeError(error.message));
       setLoading(false);
       return;
     }
 
-    setSuccess(true);
+    // Confirm email が OFF の場合、session が即座に返る
+    if (data.session) {
+      try {
+        await fetch("/api/auth/sync-user", { method: "POST" });
+      } catch {
+        // DB同期失敗でもリダイレクトは続行
+      }
+      router.push(redirectTo);
+      router.refresh();
+      return;
+    }
+
+    // session がない場合（Confirm email ON）はログインページへ
+    router.push("/auth/login?message=確認メールを送信しました。メールを確認してください。");
     setLoading(false);
   }
 
@@ -62,35 +87,8 @@ function SignupForm() {
     });
 
     if (error) {
-      setError(error.message);
+      setError(localizeError(error.message));
     }
-  }
-
-  if (success) {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-4">
-        <div className="w-full max-w-md text-center space-y-6">
-          <div className="text-4xl">📧</div>
-          <h2 className="font-[var(--font-noto-serif-jp)] text-xl text-[#d4af37]">
-            確認メールを送信しました
-          </h2>
-          <p className="text-sm text-[#9ca3af]">
-            <span className="text-white">{email}</span>{" "}
-            に確認メールを送信しました。
-            <br />
-            メール内のリンクをクリックしてアカウントを有効化してください。
-          </p>
-          <Link href="/auth/login">
-            <Button
-              variant="outline"
-              className="border-[rgba(212,175,55,0.3)] text-[#d4af37]"
-            >
-              ログインページへ
-            </Button>
-          </Link>
-        </div>
-      </div>
-    );
   }
 
   return (

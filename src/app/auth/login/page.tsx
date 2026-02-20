@@ -1,11 +1,17 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+
+const URL_ERROR_MESSAGES: Record<string, string> = {
+  no_code: "認証コードが見つかりませんでした。もう一度お試しください。",
+  auth_failed: "認証に失敗しました。もう一度お試しください。",
+  no_user: "ユーザー情報を取得できませんでした。もう一度お試しください。",
+};
 
 export default function LoginPage() {
   return (
@@ -13,6 +19,16 @@ export default function LoginPage() {
       <LoginForm />
     </Suspense>
   );
+}
+
+function localizeError(message: string): string {
+  if (message === "Invalid login credentials") {
+    return "メールアドレスまたはパスワードが正しくありません";
+  }
+  if (message.includes("Email not confirmed")) {
+    return "メールアドレスが確認されていません";
+  }
+  return message;
 }
 
 function LoginForm() {
@@ -23,13 +39,27 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
   const supabase = createClient();
 
+  // URLパラメータからエラー/メッセージを取得
+  useEffect(() => {
+    const urlError = searchParams.get("error");
+    const urlMessage = searchParams.get("message");
+    if (urlError && URL_ERROR_MESSAGES[urlError]) {
+      setError(URL_ERROR_MESSAGES[urlError]);
+    }
+    if (urlMessage) {
+      setMessage(urlMessage);
+    }
+  }, [searchParams]);
+
   async function handleEmailLogin(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setMessage("");
     setLoading(true);
 
     const { error } = await supabase.auth.signInWithPassword({
@@ -38,13 +68,16 @@ function LoginForm() {
     });
 
     if (error) {
-      setError(
-        error.message === "Invalid login credentials"
-          ? "メールアドレスまたはパスワードが正しくありません"
-          : error.message
-      );
+      setError(localizeError(error.message));
       setLoading(false);
       return;
+    }
+
+    // DB同期
+    try {
+      await fetch("/api/auth/sync-user", { method: "POST" });
+    } catch {
+      // DB同期失敗でもリダイレクトは続行
     }
 
     router.push(redirectTo);
@@ -53,6 +86,7 @@ function LoginForm() {
 
   async function handleGoogleLogin() {
     setError("");
+    setMessage("");
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
@@ -61,7 +95,7 @@ function LoginForm() {
     });
 
     if (error) {
-      setError(error.message);
+      setError(localizeError(error.message));
     }
   }
 
@@ -77,6 +111,13 @@ function LoginForm() {
           </Link>
           <p className="text-[#9ca3af] text-sm">アカウントにログイン</p>
         </div>
+
+        {/* メッセージ表示 */}
+        {message && (
+          <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 text-green-400 text-sm text-center">
+            {message}
+          </div>
+        )}
 
         {/* エラー表示 */}
         {error && (
